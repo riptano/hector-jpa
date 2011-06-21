@@ -2,8 +2,11 @@ package com.datastax.hectorjpa.store;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
@@ -22,6 +25,7 @@ import com.datastax.hectorjpa.ManagedEntityTestBase;
 import com.datastax.hectorjpa.bean.Customer;
 import com.datastax.hectorjpa.bean.Phone;
 import com.datastax.hectorjpa.bean.Phone.PhoneType;
+import com.datastax.hectorjpa.bean.Foo1;
 import com.datastax.hectorjpa.bean.Sale;
 import com.datastax.hectorjpa.bean.Sale_;
 import com.datastax.hectorjpa.bean.Store;
@@ -38,6 +42,7 @@ import com.datastax.hectorjpa.bean.tree.Nerd;
 import com.datastax.hectorjpa.bean.tree.Nerd_;
 import com.datastax.hectorjpa.bean.tree.Techie;
 import com.datastax.hectorjpa.bean.tree.Techie_;
+import com.google.common.collect.Sets;
 
 /**
  * 
@@ -657,7 +662,6 @@ public class SearchTest extends ManagedEntityTestBase {
    * Make sure when we delete an entity it's removed from the index
    */
   @Test
-  @Ignore
   public void namedQuery() {
 
     EntityManager em = entityManagerFactory.createEntityManager();
@@ -703,4 +707,199 @@ public class SearchTest extends ManagedEntityTestBase {
     em2.close();
   }
 
+  /**
+   * Search multiple items with the in operator
+   */
+  @Test
+  @Ignore
+  public void namedQueryWithIn() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    Store fifth = new Store();
+    fifth.setName("namedQuery-5");
+
+    em.persist(fifth);
+
+    Store fourth = new Store();
+    fourth.setName("namedQuery-4");
+
+    em.persist(fourth);
+
+    Store third = new Store();
+    third.setName("namedQuery-3");
+
+    em.persist(third);
+    System.out.println(third.getName());
+    Store second = new Store();
+    second.setName("namedQuery-2");
+
+    em.persist(second);
+
+    Store first = new Store();
+    first.setName("namedQuery-1");
+
+    em.persist(first);    
+    em.getTransaction().commit();    
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    final TypedQuery<Store> query = em2.createNamedQuery("inname", Store.class);
+    final ArrayList<String> names = new ArrayList<String>();
+    names.add("namedQuery-3");
+    names.add("namedQuery-1");
+    query.setParameter("n",names);
+    
+    for (final Store found : query.getResultList()) {
+        names.remove(found.getName());
+    }
+    
+    assertTrue(names.isEmpty());
+    
+    em2.getTransaction().commit();
+    em2.close();
+  }
+  
+  @Test
+  public void searchRangeIncludeMinIncludeMax() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+    final Set<Integer> others = Sets.newHashSet();
+
+    for (int i = 0; i < 10; i++) {
+        Foo1 foo = new Foo1();
+        foo.setOther(i);
+        em.persist(foo);
+        others.add(i);
+    }
+
+    em.getTransaction().commit();    
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    TypedQuery<Foo1> query = em2.createNamedQuery("searchRangeIncludeMinIncludeMax", Foo1.class);
+    query.setParameter("otherLow", 0);
+    query.setParameter("otherHigh", 9);
+
+    for (final Foo1 foo : query.getResultList()) {
+        others.remove(foo.getOther());
+    }
+    
+    if (!others.isEmpty()) {
+        fail("Set still contains elements: " + others);
+    }
+    
+    em2.getTransaction().commit();
+    em2.close();
+  }
+  
+  @Test
+  public void searchRangeIncludeMinExcludeMax() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+    final Set<Integer> others = Sets.newHashSet();
+
+    for (int i = 0; i < 10; i++) {
+        Foo1 foo = new Foo1();
+        foo.setOther(i);
+        em.persist(foo);
+        others.add(i);
+    }
+
+    em.getTransaction().commit();    
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    TypedQuery<Foo1> query = em2.createNamedQuery("searchRangeIncludeMinExcludeMax", Foo1.class);
+    query.setParameter("otherLow", 0);
+    query.setParameter("otherHigh", 9);
+
+    for (final Foo1 foo : query.getResultList()) {
+        others.remove(foo.getOther());
+    }
+    
+    assertEquals(1, others.size());
+    assertTrue(others.contains(9));
+    
+    em2.getTransaction().commit();
+    em2.close();
+  }
+  
+  @Test
+  public void searchRangeExcludeMinExcludeMax() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+    final Set<Integer> others = Sets.newHashSet();
+
+    for (int i = 0; i < 10; i++) {
+        Foo1 foo = new Foo1();
+        foo.setOther(i);
+        em.persist(foo);
+        others.add(i);
+    }
+
+    em.getTransaction().commit();    
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    TypedQuery<Foo1> query = em2.createNamedQuery("searchRangeExcludeMinExcludeMax", Foo1.class);
+    query.setParameter("otherLow", 0);
+    query.setParameter("otherHigh", 9);
+
+    for (final Foo1 foo : query.getResultList()) {
+        others.remove(foo.getOther());
+    }
+    
+    assertEquals(2, others.size());
+    assertTrue(others.contains(0));
+    assertTrue(others.contains(9));
+    em2.getTransaction().commit();
+    em2.close();
+  }
+  
+  @Test
+  public void searchRangeExcludeMinIncludeMax() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+    final Set<Integer> others = Sets.newHashSet();
+
+    for (int i = 0; i < 10; i++) {
+        Foo1 foo = new Foo1();
+        foo.setOther(i);
+        em.persist(foo);
+        others.add(i);
+    }
+
+    em.getTransaction().commit();    
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    TypedQuery<Foo1> query = em2.createNamedQuery("searchRangeExcludeMinIncludeMax", Foo1.class);
+    query.setParameter("otherLow", 0);
+    query.setParameter("otherHigh", 9);
+
+    for (final Foo1 foo : query.getResultList()) {
+        others.remove(foo.getOther());
+    }
+    
+    assertEquals(1, others.size());
+    assertTrue(others.contains(0));
+    em2.getTransaction().commit();
+    em2.close();
+  }
 }
