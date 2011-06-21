@@ -70,13 +70,10 @@ public class CassandraStoreManager extends AbstractStoreManager {
 		return new CassandraStoreQuery(ep, conf);
 	}
 
-	
-
-	@SuppressWarnings("unchecked")
 	@Override
-	protected Collection flush(Collection pNew, Collection pNewUpdated,
-			Collection pNewFlushedDeleted, Collection pDirty,
-			Collection pDeleted) {
+	protected Collection<Exception> flush(Collection<OpenJPAStateManager> pNew, Collection<OpenJPAStateManager> pNewUpdated,
+	        Collection<OpenJPAStateManager> pNewFlushedDeleted, Collection<OpenJPAStateManager> pDirty,
+	        Collection<OpenJPAStateManager> pDeleted) {
 	
 	  
 		long clock = config.getKeyspace().createClock();
@@ -215,8 +212,8 @@ public class CassandraStoreManager extends AbstractStoreManager {
 		log.debug("in CSM.open()");
 	}
 
-	protected Collection getUnsupportedOptions() {
-		Collection c = super.getUnsupportedOptions();
+	protected Collection<String> getUnsupportedOptions() {
+		Collection<String> c = super.getUnsupportedOptions();
 
 		// remove options we do support but the abstract store doesn't
 		// c.remove(OpenJPAConfiguration.OPTION_ID_DATASTORE);
