@@ -917,6 +917,39 @@ public class SearchTest extends ManagedEntityTestBase {
 		em2.getTransaction().commit();
 		em2.close();
 	}
+	
+    @Test
+    @Ignore
+    public void searchRangeIncludeMinNoMax() {
+        EntityManager em = entityManagerFactory.createEntityManager();
+        em.getTransaction().begin();
+        final Set<Integer> others = Sets.newHashSet();
+
+        for (int i = 0; i < 10; i++) {
+            Foo1 foo = new Foo1();
+            foo.setOther(i);
+            em.persist(foo);
+            others.add(i);
+        }
+
+        em.getTransaction().commit();
+        em.close();
+
+        EntityManager em2 = entityManagerFactory.createEntityManager();
+        em2.getTransaction().begin();
+
+        TypedQuery<Foo1> query = em2.createNamedQuery("searchRangeIncludeMinNoMax", Foo1.class);
+        query.setParameter("otherLow", 0);
+
+        for (final Foo1 foo : query.getResultList()) {
+            others.remove(foo.getOther());
+        }
+
+        assertEquals(1, others.size());
+        assertTrue(others.contains(0));
+        em2.getTransaction().commit();
+        em2.close();
+    }	
 
 	@Test
 	public void subclassSearchTest() {

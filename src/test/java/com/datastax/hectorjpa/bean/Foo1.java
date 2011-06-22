@@ -19,7 +19,9 @@ import javax.persistence.NamedQuery;
         @NamedQuery(name = "searchRangeExcludeMinExcludeMax",
                 query = "select t from Foo1 as t where t.other > :otherLow and t.other < :otherHigh"),
         @NamedQuery(name = "searchRangeExcludeMinIncludeMax",
-                query = "select t from Foo1 as t where t.other > :otherLow and t.other <= :otherHigh") })
+                query = "select t from Foo1 as t where t.other > :otherLow and t.other <= :otherHigh"),
+        @NamedQuery(name = "searchRangeIncludeMinNoMax",
+                query = "select t from Foo1 as t where t.other >= :otherLow") })
 public class Foo1 {
     @Id
     @GeneratedValue
