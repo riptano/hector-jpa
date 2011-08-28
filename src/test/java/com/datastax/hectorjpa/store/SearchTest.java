@@ -1817,4 +1817,69 @@ public class SearchTest extends ManagedEntityTestBase {
     em2.close();
 
   }
+  
+  
+  @Test
+  public void dateRangeTest(){
+    
+    long low = 1314575108000l;
+    
+    long middle = 1314578708000l;
+    
+    long high = 1314582308000l;
+    
+    
+    UUID userId  = new UUID();
+    
+    UserDateRange range1 = new UserDateRange();
+    range1.setUserId(userId);
+    range1.setStart(low);
+    range1.setEnd(middle);
+    
+    
+    UserDateRange range2 = new UserDateRange();
+    range2.setUserId(userId);
+    range2.setStart(middle);
+    range2.setEnd(high);
+    
+   
+    
+    
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    em.persist(range1);
+    em.persist(range2);
+
+    em.getTransaction().commit();
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+    
+    CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
+
+      CriteriaQuery<UserDateRange> query = queryBuilder.createQuery(UserDateRange.class);
+
+      Root<UserDateRange> sum = query.from(UserDateRange.class);
+
+      Predicate phonePredicate = queryBuilder.equal(sum.get(UserDateRange_.userId),
+          userId);
+
+      Predicate startPred = queryBuilder.greaterThanOrEqualTo(
+          sum.get(UserDateRange_.startSaved), range1.getStart());
+      
+      Predicate endPred = queryBuilder.lessThanOrEqualTo(
+          sum.get(UserDateRange_.lastSaved),range2.getEnd());
+
+      query.where(phonePredicate, endPred, startPred);
+
+      TypedQuery<UserDateRange> smsQuery = em2.createQuery(query);
+
+      List<UserDateRange> ranges =  smsQuery.getResultList();
+      
+      
+    }
+
+  }
 }
