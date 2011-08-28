@@ -3,8 +3,6 @@ package com.datastax.hectorjpa.query;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
-
 import org.apache.openjpa.kernel.exps.CandidatePath;
 import org.apache.openjpa.kernel.exps.Expression;
 import org.apache.openjpa.kernel.exps.ExpressionVisitor;
@@ -22,6 +20,7 @@ import com.datastax.hectorjpa.query.ast.LessThanEqualExpression;
 import com.datastax.hectorjpa.query.ast.LessThanExpression;
 import com.datastax.hectorjpa.query.ast.OrExpression;
 import com.datastax.hectorjpa.query.field.FieldExpression;
+import com.datastax.hectorjpa.query.field.FieldExpression.Operand;
 import com.datastax.hectorjpa.query.field.FieldExpressionFactory;
 import com.datastax.hectorjpa.store.CassandraClassMetaData;
 
@@ -76,9 +75,9 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
       log.debug("in EqualsExpression with {}", value);
       
       FieldExpression field = getFieldExpression();
-      field.setStart(value, ComponentEquality.EQUAL);
+      field.setStart(value, Operand.Equal);
       //greater than equal is actually inclusive
-      field.setEnd(value, ComponentEquality.GREATER_THAN_EQUAL);
+      field.setEnd(value, Operand.Equal);
       
       return;
     }
@@ -86,14 +85,14 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
     
     if(exp instanceof LessThanEqualExpression){
       FieldExpression field = getFieldExpression();
-      field.setEnd(value, ComponentEquality.GREATER_THAN_EQUAL);
+      field.setEnd(value, Operand.LessThanEqual);
       
       return;
     }
     
     if(exp instanceof LessThanExpression){
       FieldExpression field = getFieldExpression();
-      field.setEnd(value, ComponentEquality.EQUAL);
+      field.setEnd(value, Operand.LessThan);
       
       return;
     }
@@ -101,14 +100,14 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
     if(exp instanceof GreaterThanEqualExpression){
       log.debug("in GreaterThanEqualsExpression with {}", value);
       FieldExpression field = getFieldExpression();
-      field.setStart(value, ComponentEquality.EQUAL);
+      field.setStart(value, Operand.GreaterThanEqual);
       
       return;
     }
     
     if(exp instanceof GreaterThanExpression){
       FieldExpression field = getFieldExpression();
-      field.setStart(value, ComponentEquality.GREATER_THAN_EQUAL);
+      field.setStart(value, Operand.GreaterThan);
       
       return;
     }

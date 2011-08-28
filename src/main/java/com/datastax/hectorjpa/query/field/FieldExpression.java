@@ -1,7 +1,5 @@
 package com.datastax.hectorjpa.query.field;
 
-import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
-
 import org.apache.openjpa.meta.FieldMetaData;
 import org.apache.openjpa.util.UnsupportedException;
 
@@ -20,13 +18,13 @@ public abstract class FieldExpression {
 
   protected FieldMetaData field;
 
-  protected ComponentEquality startEquality;
+  protected Operand startEquality;
 
   protected Object start;
 
   protected boolean startSet = false;
   
-  protected ComponentEquality endEquality;
+  protected Operand endEquality;
 
   // the end value in a range scan
   protected Object end;
@@ -37,8 +35,8 @@ public abstract class FieldExpression {
   public FieldExpression(FieldMetaData field) {
     this.field = field;
 
-    startEquality = ComponentEquality.EQUAL;
-    endEquality = ComponentEquality.EQUAL;
+    startEquality = Operand.Equal;
+    endEquality = Operand.Equal;
 
   }
 
@@ -54,7 +52,7 @@ public abstract class FieldExpression {
    * @param inclusive
    *          True if this is contains an equality operand I.E =, <=, >=
    */
-  public void setStart(Object start, ComponentEquality equality) {
+  public void setStart(Object start, Operand equality) {
     if (this.startSet) {
       throw new UnsupportedException(
           String
@@ -77,14 +75,14 @@ public abstract class FieldExpression {
   /**
    * @return the startEquality
    */
-  public ComponentEquality getStartEquality() {
+  public Operand getStartEquality() {
     return startEquality;
   }
 
   /**
    * @return the endEquality
    */
-  public ComponentEquality getEndEquality() {
+  public Operand getEndEquality() {
     return endEquality;
   }
 
@@ -94,7 +92,7 @@ public abstract class FieldExpression {
    * @param inclusive
    *          True if this is contains an equality operand I.E =, <=, >=
    */
-  public void setEnd(Object end, ComponentEquality equality) {
+  public void setEnd(Object end, Operand equality) {
     if (this.endSet) {
       throw new UnsupportedException(
           String
@@ -125,4 +123,17 @@ public abstract class FieldExpression {
     return sb.toString();
   }
 
+
+  /**
+   * Used to keep our expressions correct
+   * @author Todd Nine
+   *
+   */
+  public enum Operand {
+    LessThan,
+    LessThanEqual,
+    Equal,
+    GreaterThanEqual,
+    GreaterThan;
+  }
 }

@@ -138,8 +138,8 @@ public class SubclassIndexOperation extends AbstractIndexOperation {
     
     exp = query.getExpression(this.fields[last].getMetaData());
     
-    this.fields[last].addToComposite(startScan, componentIndex, exp.getStart(), exp.getStartEquality());
-    this.fields[last].addToComposite(endScan, componentIndex, exp.getEnd(), exp.getEndEquality());
+    this.fields[last].addToComposite(startScan, componentIndex, exp.getStart(), query.getStartEquality());
+    this.fields[last].addToComposite(endScan, componentIndex, exp.getEnd(), query.getEndEquality());
     
     
     return new ScanBuffer(keyspace, startScan, endScan, indexName);

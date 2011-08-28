@@ -14,10 +14,12 @@ import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
 import me.prettyprint.hector.api.beans.ColumnSlice;
 import me.prettyprint.hector.api.beans.DynamicComposite;
 import me.prettyprint.hector.api.beans.HColumn;
+import me.prettyprint.hector.api.exceptions.HInvalidRequestException;
 import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.QueryResult;
 import me.prettyprint.hector.api.query.SliceQuery;
 
+import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,14 +29,15 @@ import com.datastax.hectorjpa.index.AbstractIndexOperation;
 /**
  * Simple iterator that iterates over rows.
  * 
- * TODO get max size from settings. 
+ * TODO get max size from settings.
  * 
  * @author Todd Nine
  * 
  */
 public class ScanBuffer {
 
-  private static final Logger logger = LoggerFactory.getLogger(ScanBuffer.class);
+  private static final Logger logger = LoggerFactory
+      .getLogger(ScanBuffer.class);
 
   protected static int PAGE_SIZE = 500;
 
@@ -81,17 +84,17 @@ public class ScanBuffer {
     if (count == 0) {
       return 0;
     }
-    
-    int endIndex = index+count;
-    
-    //advance in our currently loaded buffer
-    if(columns != null && endIndex < columns.size()){
+
+    int endIndex = index + count;
+
+    // advance in our currently loaded buffer
+    if (columns != null && endIndex < columns.size()) {
       index = endIndex;
       return count;
     }
 
-    int startSize = columns == null ? 0: columns.size();
-    
+    int startSize = columns == null ? 0 : columns.size();
+
     int loaded = 0;
 
     // advance pages until we've advanced to the page we want
@@ -103,25 +106,27 @@ public class ScanBuffer {
       }
 
       loaded += columns.size();
-   
-      //we didn't have enough columns to load a full page, adjust the index and count
-      if(columns.size() < PAGE_SIZE){
-        
-        //we couldn't load everything requested, set the index and return the loaded 
-        if(loaded < count){
-          index = columns.size()-1;
-          return loaded+startSize-1;
+
+      // we didn't have enough columns to load a full page, adjust the index and
+      // count
+      if (columns.size() < PAGE_SIZE) {
+
+        // we couldn't load everything requested, set the index and return the
+        // loaded
+        if (loaded < count) {
+          index = columns.size() - 1;
+          return loaded + startSize - 1;
         }
-        
+
         break;
-        
+
       }
-      
+
       page++;
     }
 
-    //we loaded everything
-    index = count % PAGE_SIZE-1;
+    // we loaded everything
+    index = count % PAGE_SIZE - 1;
     return count;
 
   }
@@ -147,27 +152,26 @@ public class ScanBuffer {
    * @return
    */
   public int loadNext(int count) {
-    //special case where nothing is loaded
-    if(columns == null){
+    // special case where nothing is loaded
+    if (columns == null) {
       columns = nextPage(count, start);
-      
-      if(columns.size() > 0){
+
+      if (columns.size() > 0) {
         index = 0;
-        start = bumpComposite(columns.get(columns.size()-1).getName());
+        start = bumpComposite(columns.get(columns.size() - 1).getName());
       }
-      
+
       return columns.size();
     }
-    
-    int toLoad = count - (columns.size() - index-1);
+
+    int toLoad = count - (columns.size() - index - 1);
 
     if (toLoad > 0) {
-      columns.addAll(nextPage(toLoad,
-          start));
+      columns.addAll(nextPage(toLoad, start));
 
     }
 
-    return columns.size()-index-1;
+    return columns.size() - index - 1;
 
   }
 
@@ -218,31 +222,51 @@ public class ScanBuffer {
   private List<HColumn<DynamicComposite, byte[]>> nextPage(int size,
       DynamicComposite startScan) {
 
-    //we've advanced past the end, return an empty result set
-    if(end != null && startScan.compareTo(end) > -1){
-      return new ArrayList<HColumn<DynamicComposite, byte[]>>();
+    // TODO TN the bug is in this compareTo.  The gross hack of the try/catch below
+    //is the workaround until this is resolved
+
+    // we've advanced past the end, return an empty result set
+    // if(end != null && startScan.compareTo(end) > -1){
+    // return new ArrayList<HColumn<DynamicComposite, byte[]>>();
+    // }
+
+    if (logger.isDebugEnabled()) {
+
+      String startHex = startScan == null ? "" : ByteBufferUtil
+          .bytesToHex(startScan.serialize());
+      String endHex = end == null ? "" : ByteBufferUtil.bytesToHex(end
+          .serialize());
+
+      logger.debug("Query start: {}, end: {}, size: {}", new Object[] {
+          startHex, endHex, size });
     }
-    
-    if(logger.isDebugEnabled()){
-      
-      String startHex = startScan == null ? "" : ByteBufferUtil.bytesToHex(startScan.serialize());
-      String endHex = end == null? "" :  ByteBufferUtil.bytesToHex(end.serialize());
-      
-      logger.debug("Query start: {}, end: {}, size: {}", new Object[]{startHex, endHex, size});
-    }
-    
-    SliceQuery<byte[], DynamicComposite, byte[]> sliceQuery = HFactory.createSliceQuery(keyspace, BytesArraySerializer.get(), DynamicCompositeSerializer.get(),
-        BytesArraySerializer.get());
+
+    SliceQuery<byte[], DynamicComposite, byte[]> sliceQuery = HFactory
+        .createSliceQuery(keyspace, BytesArraySerializer.get(),
+            DynamicCompositeSerializer.get(), BytesArraySerializer.get());
     QueryResult<ColumnSlice<DynamicComposite, byte[]>> result = null;
 
     sliceQuery.setRange(startScan, end, false, size);
     sliceQuery.setKey(indexName);
     sliceQuery.setColumnFamily(AbstractIndexOperation.CF_NAME);
     logger.debug("in executeQuery with sliceQuery {}", sliceQuery);
-    result = sliceQuery.execute();
-    
+
+    try {
+      result = sliceQuery.execute();
+    } catch (HInvalidRequestException ire) {
+
+      //work around for above bug in hector, this is a dirty hack
+      if (ire.getMessage().indexOf(
+          "range finish must come after start in the order of traversal") > -1) {
+        return new ArrayList<HColumn<DynamicComposite, byte[]>>();
+       
+      }
+      
+      throw ire;
+    }
+
     List<HColumn<DynamicComposite, byte[]>> columns = result.get().getColumns();
-    
+
     logger.debug("found {} results", columns.size());
 
     return columns;

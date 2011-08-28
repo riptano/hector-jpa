@@ -104,8 +104,8 @@ public class IndexOperation extends AbstractIndexOperation {
 
 //    We can only write non 0 separators at the last value in our composite type
     
-    this.fields[last].addToComposite(startScan, last, exp.getStart(), exp.getStartEquality());
-    this.fields[last].addToComposite(endScan, last, exp.getEnd(), exp.getEndEquality());
+    this.fields[last].addToComposite(startScan, last, exp.getStart(), query.getStartEquality());
+    this.fields[last].addToComposite(endScan, last, exp.getEnd(), query.getEndEquality());
     
     
     

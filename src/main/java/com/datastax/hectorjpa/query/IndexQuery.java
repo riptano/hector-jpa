@@ -4,11 +4,14 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
+
 import org.apache.openjpa.meta.FieldMetaData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.hectorjpa.query.field.FieldExpression;
+import com.datastax.hectorjpa.query.field.FieldExpression.Operand;
 import com.datastax.hectorjpa.store.CassandraClassMetaData;
 
 /**
@@ -59,6 +62,52 @@ public class IndexQuery {
    */
   public CassandraClassMetaData getMetaData() {
     return metaData;
+  }
+  
+  /**
+   * Get the component equality for the index scan as a whole.  Uses the following truth table.
+   * 
+   * > GREATER_THAN_EQUAL
+   * = EQUAL
+   * >= EQUAL
+   * 
+   * If any of the fields uses greater than, then this will short circuit on the first > than match
+   * 
+   * @return
+   */
+  public ComponentEquality getStartEquality(){
+    
+    for(FieldExpression expression: expressions.values()){
+      if(Operand.GreaterThan.equals(expression.getStartEquality())){
+        return ComponentEquality.GREATER_THAN_EQUAL;
+      }
+    }
+    
+    return ComponentEquality.EQUAL;
+  }
+  
+  /**
+  * Get the component equality for the index scan as a whole.  Uses the following truth table.
+  * 
+  * < EQUAL
+  * <= GREATER_THAN_EQUAL
+  * = GREATER_THAN_EQUAL
+  *
+  * 
+  * 
+  * If any of the fields uses greater than, then this will short circuit on the first <= match
+  * 
+  * @return
+  */
+  public ComponentEquality getEndEquality(){
+    
+    for(FieldExpression expression: expressions.values()){
+      if(Operand.LessThan.equals(expression.getEndEquality())){
+        return ComponentEquality.EQUAL;
+      }
+    }
+    
+    return ComponentEquality.GREATER_THAN_EQUAL;
   }
   
   
