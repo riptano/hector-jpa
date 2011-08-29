@@ -11,7 +11,7 @@ import com.eaio.uuid.UUID;
 
 @Entity
 @ColumnFamily("UserDateRangeColumnFamily")
-@Index(fields = "lastSaved,startSaved,userId")
+@Index(fields = "userId, start, end")
 public class UserDateRange extends AbstractEntity {
 
 
@@ -49,6 +49,21 @@ public class UserDateRange extends AbstractEntity {
 
   public void setEnd(long end) {
     this.end = end;
+  }
+
+  @Override
+  public String toString() {
+    StringBuilder builder = new StringBuilder();
+    builder.append("UserDateRange [userId=");
+    builder.append(userId);
+    builder.append(", start=");
+    builder.append(start);
+    builder.append(", end=");
+    builder.append(end);
+    builder.append(", getId()=");
+    builder.append(getId());
+    builder.append("]");
+    return builder.toString();
   }
 
   

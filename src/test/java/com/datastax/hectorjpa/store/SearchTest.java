@@ -20,13 +20,24 @@ import javax.persistence.criteria.Order;
 import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 
-import com.datastax.hectorjpa.bean.*;
 import org.joda.time.DateTime;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import com.datastax.hectorjpa.ManagedEntityTestBase;
+import com.datastax.hectorjpa.bean.Customer;
+import com.datastax.hectorjpa.bean.Foo1;
+import com.datastax.hectorjpa.bean.Foo2;
+import com.datastax.hectorjpa.bean.Invoice;
+import com.datastax.hectorjpa.bean.Invoice_;
+import com.datastax.hectorjpa.bean.Phone;
 import com.datastax.hectorjpa.bean.Phone.PhoneType;
+import com.datastax.hectorjpa.bean.Sale;
+import com.datastax.hectorjpa.bean.Sale_;
+import com.datastax.hectorjpa.bean.Store;
+import com.datastax.hectorjpa.bean.Store_;
+import com.datastax.hectorjpa.bean.UserDateRange;
+import com.datastax.hectorjpa.bean.UserDateRange_;
 import com.datastax.hectorjpa.bean.inheritance.Client;
 import com.datastax.hectorjpa.bean.inheritance.Manager;
 import com.datastax.hectorjpa.bean.inheritance.Person;
@@ -780,11 +791,12 @@ public class SearchTest extends ManagedEntityTestBase {
    * Tests that when 2 indexes use the same field ordering, they do not
    * conflict. I.E.
    * 
-   * @Index(fields=userId, order=read, createdDate desc)<br/> 
+   * @Index(fields=userId, order=read, createdDate desc)<br/>
    * 
    * @Index(fields=userId, read,createdDate)
    * 
-   * These two should not be equal, and should not generate the same row key
+   *                       These two should not be equal, and should not
+   *                       generate the same row key
    */
   @Test
   public void duplicateFieldOrder() {
@@ -1537,13 +1549,11 @@ public class SearchTest extends ManagedEntityTestBase {
     EntityManager em2 = entityManagerFactory.createEntityManager();
     em2.getTransaction().begin();
 
-    
     Foo2 date1 = new Foo2(new DateTime(2011, 8, 20, 0, 0, 0, 0).getMillis());
     Foo2 date2 = new Foo2(new DateTime(2011, 8, 21, 0, 0, 0, 0).getMillis());
     Foo2 date3 = new Foo2(new DateTime(2011, 8, 22, 0, 0, 0, 0).getMillis());
     Foo2 date4 = new Foo2(new DateTime(2011, 8, 23, 0, 0, 0, 0).getMillis());
 
-    
     em2.persist(date1);
     em2.persist(date2);
     em2.persist(date3);
@@ -1554,7 +1564,7 @@ public class SearchTest extends ManagedEntityTestBase {
 
     EntityManager em2request = entityManagerFactory.createEntityManager();
     em2request.getTransaction().begin();
-    
+
     long startSearch = new DateTime(2011, 7, 21, 0, 0, 0, 0).getMillis();
 
     TypedQuery<Foo2> query2 = em2request.createNamedQuery(
@@ -1566,7 +1576,7 @@ public class SearchTest extends ManagedEntityTestBase {
 
     System.out.println("result2=" + result2.size());
     assertEquals(2, result2.size());
-    
+
     assertEquals(date1, result2.get(0));
     assertEquals(date2, result2.get(1));
 
@@ -1817,34 +1827,28 @@ public class SearchTest extends ManagedEntityTestBase {
     em2.close();
 
   }
-  
-  
+
   @Test
-  public void dateRangeTest(){
-    
+  public void dateRangeAll() {
+
     long low = 1314575108000l;
-    
+
     long middle = 1314578708000l;
-    
+
     long high = 1314582308000l;
-    
-    
-    UUID userId  = new UUID();
-    
+
+    UUID userId = new UUID();
+
     UserDateRange range1 = new UserDateRange();
     range1.setUserId(userId);
     range1.setStart(low);
     range1.setEnd(middle);
-    
-    
+
     UserDateRange range2 = new UserDateRange();
     range2.setUserId(userId);
     range2.setStart(middle);
     range2.setEnd(high);
-    
-   
-    
-    
+
     EntityManager em = entityManagerFactory.createEntityManager();
     em.getTransaction().begin();
 
@@ -1856,30 +1860,169 @@ public class SearchTest extends ManagedEntityTestBase {
 
     EntityManager em2 = entityManagerFactory.createEntityManager();
     em2.getTransaction().begin();
-    
+
     CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
 
-      CriteriaQuery<UserDateRange> query = queryBuilder.createQuery(UserDateRange.class);
+    CriteriaQuery<UserDateRange> query = queryBuilder
+        .createQuery(UserDateRange.class);
 
-      Root<UserDateRange> sum = query.from(UserDateRange.class);
+    Root<UserDateRange> sum = query.from(UserDateRange.class);
 
-      Predicate phonePredicate = queryBuilder.equal(sum.get(UserDateRange_.userId),
-          userId);
+    Predicate phonePredicate = queryBuilder.equal(
+        sum.get(UserDateRange_.userId), userId);
 
-      Predicate startPred = queryBuilder.greaterThanOrEqualTo(
-          sum.get(UserDateRange_.startSaved), range1.getStart());
-      
-      Predicate endPred = queryBuilder.lessThanOrEqualTo(
-          sum.get(UserDateRange_.lastSaved),range2.getEnd());
+    Predicate startPred = queryBuilder.greaterThanOrEqualTo(
+        sum.get(UserDateRange_.start), range1.getStart());
 
-      query.where(phonePredicate, endPred, startPred);
+    Predicate endPred = queryBuilder.lessThanOrEqualTo(
+        sum.get(UserDateRange_.end), range2.getEnd());
 
-      TypedQuery<UserDateRange> smsQuery = em2.createQuery(query);
+    query.where(phonePredicate, endPred, startPred);
 
-      List<UserDateRange> ranges =  smsQuery.getResultList();
-      
-      
-    }
+    TypedQuery<UserDateRange> smsQuery = em2.createQuery(query);
+
+    List<UserDateRange> ranges = smsQuery.getResultList();
+    
+    assertEquals(2, ranges.size());
+    
+    assertEquals(range1, ranges.get(0));
+    
+    assertEquals(range2, ranges.get(1));
+
+  }
+  
+  
+  @Test
+  public void dateRangeFirst() {
+
+//    long low = 1314575108000l;
+//
+//    long middle = 1314578708000l;
+//
+//    long high = 1314582308000l;
+    
+    long low = 1;
+
+    long middle = 2;
+
+    long high = 3;
+
+    UUID userId = new UUID();
+
+    UserDateRange range1 = new UserDateRange();
+    range1.setUserId(userId);
+    range1.setStart(low);
+    range1.setEnd(middle);
+
+    UserDateRange range2 = new UserDateRange();
+    range2.setUserId(userId);
+    range2.setStart(middle);
+    range2.setEnd(high);
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    em.persist(range1);
+    em.persist(range2);
+
+    em.getTransaction().commit();
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+
+    CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
+
+    CriteriaQuery<UserDateRange> query = queryBuilder
+        .createQuery(UserDateRange.class);
+
+    Root<UserDateRange> sum = query.from(UserDateRange.class);
+
+    Predicate phonePredicate = queryBuilder.equal(
+        sum.get(UserDateRange_.userId), userId);
+
+    //NOTE the use of an upper and lower bound on the start column.  This is required to get accurate results when range scanning
+    Predicate startPred = queryBuilder.greaterThanOrEqualTo(sum.get(UserDateRange_.start), range1.getStart());
+    
+    Predicate startEndPred = queryBuilder.lessThanOrEqualTo(sum.get(UserDateRange_.start), range1.getStart());
+
+
+    Predicate endPred = queryBuilder.lessThanOrEqualTo(sum.get(UserDateRange_.end), range1.getEnd());
+
+    query.where(phonePredicate, endPred, startPred,startEndPred);
+
+    TypedQuery<UserDateRange> smsQuery = em2.createQuery(query);
+
+    List<UserDateRange> ranges = smsQuery.getResultList();
+    
+    assertEquals(1, ranges.size());
+    
+    assertEquals(range1, ranges.get(0));
+    
+
+  }
+  
+  
+  @Test
+  public void dateRangeSecond() {
+
+    long low = 1314575108000l;
+
+    long middle = 1314578708000l;
+
+    long high = 1314582308000l;
+
+    UUID userId = new UUID();
+
+    UserDateRange range1 = new UserDateRange();
+    range1.setUserId(userId);
+    range1.setStart(low);
+    range1.setEnd(middle);
+
+    UserDateRange range2 = new UserDateRange();
+    range2.setUserId(userId);
+    range2.setStart(middle);
+    range2.setEnd(high);
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    em.persist(range1);
+    em.persist(range2);
+
+    em.getTransaction().commit();
+    em.close();
+
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+
+    CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
+
+    CriteriaQuery<UserDateRange> query = queryBuilder
+        .createQuery(UserDateRange.class);
+
+    Root<UserDateRange> sum = query.from(UserDateRange.class);
+
+    Predicate phonePredicate = queryBuilder.equal(
+        sum.get(UserDateRange_.userId), userId);
+
+    Predicate startPred = queryBuilder.greaterThanOrEqualTo(
+        sum.get(UserDateRange_.start), range2.getStart());
+
+    Predicate endPred = queryBuilder.lessThanOrEqualTo(
+        sum.get(UserDateRange_.end), range2.getEnd());
+
+    query.where(phonePredicate, endPred, startPred);
+
+    TypedQuery<UserDateRange> smsQuery = em2.createQuery(query);
+
+    List<UserDateRange> ranges = smsQuery.getResultList();
+    
+    assertEquals(1, ranges.size());
+    
+    
+    assertEquals(range2, ranges.get(0));
+    
 
   }
 }

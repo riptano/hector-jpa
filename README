@@ -12,3 +12,36 @@ The current build is up to this version
 
 https://github.com/rantav/hector/commit/24277548729756076783ff5f1dc1b0656dba6bb1
 
+
+
+# What this plugin supports
+
+* Direct field to column mapping
+
+* One-To-* Ordered and Unordered Collections
+* Many-To-* Ordered and Unordered Collections
+* Entity cascading based on cascade behavior
+* Inerhitance
+* Basic Secondary indexing with inheritance
+
+
+# What this plugin does not support
+
+* OR query clauses
+* IN and other query apis currently unsupported by Cassandra
+
+
+# Roadmap
+
+As cassandra matures, this plugin will as well.  Below is the roadmap for these features
+
+* Continue working with OpenJPA to make this part of the Open JPA Core
+* Convert client from Hector to CQL JDBC compliant driver
+* Remove client site composite row secondary indexing and use the Distributed Lucene Index.  This depends on this issue.  https://issues.apache.org/jira/browse/CASSANDRA-2915
+
+
+# Querying
+
+Querying requires the user to define secondary indexes on Entities.  See the UserDateRange and Sale classes in the test cases for examples.
+This plugin requires build time enhancement.  This is due to the startup time analysis for inheritance in the query engine. As CQL improves, this limitation can be removed.
+
