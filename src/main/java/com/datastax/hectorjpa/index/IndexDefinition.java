@@ -8,15 +8,20 @@ import java.util.Arrays;
  * @author Todd Nine
  * 
  */
-public class IndexDefinition implements Comparable<IndexDefinition> {
+public class IndexDefinition {
 
   private FieldOrder[] indexedFields;
 
   private IndexOrder[] orderFields;
-
+  
+  private FieldOrder[] fieldByName;
+  
   public IndexDefinition(FieldOrder[] indexedFields, IndexOrder[] orderFields) {
     this.indexedFields = indexedFields;
     this.orderFields = orderFields;
+    
+    fieldByName = Arrays.copyOf(indexedFields, indexedFields.length);
+    Arrays.sort(fieldByName);
   }
 
   /**
@@ -51,116 +56,31 @@ public class IndexDefinition implements Comparable<IndexDefinition> {
     return -1;
   }
 
-  /**
-   * Compare 2 index definitions. Index definitions are compared in the
-   * following way
-   * 
-   * If an order is defined, then all order fields must be preset and in the
-   * same order for order comparison to == 0 If these orders are not the same,
-   * the shortest number of order operands is returned as less.
-   * 
-   * If the order operands are the same, the fields are compared. The fields
-   * follow the same logic of operands Indexes with less fields are returned
-   * with < 0 to encourage the use of shorter rows for faster querying
-   * 
-   * Not a null safe comparator
-   * 
-   * @author Todd Nine
-   * 
-   */
-  @Override
-  public int compareTo(IndexDefinition def2) {
-
-    int compare = 0;
-    
-    
-    IndexOrder[] def2Order = def2.getOrderFields();
-
-    if (orderFields.length > def2Order.length) {
-      return 1;
-    } else if (orderFields.length < def2Order.length) {
-      return -1;
-    }
-
-    // fields are same length, compare them
-    for (int i = 0; i < orderFields.length; i++) {
-      compare = orderFields[i].getName().compareTo(def2Order[i].getName());
-
-      if (compare != 0) {
-        return compare;
-      }
-
-    }
-
-    // our orders matched, now compare fields
-    FieldOrder[] def2Field = def2.getIndexedFields();
-
-    if (indexedFields.length > def2Field.length) {
-      return 1;
-    } else if (indexedFields.length < def2Field.length) {
-      return -1;
-    }
-
-    // lengths are the same compare the fields
-    int matchCount = 0;
-
-    // same length, compare all fields
-    for (int i = 0; i < indexedFields.length; i++) {
-      for (int j = 0; j < def2Field.length; j++) {
-
-        if (indexedFields[i].getName().equals(def2Field[j].getName())) {
-          matchCount++;
-          break;
-        }
-
-      }
-    }
-
-    return matchCount - indexedFields.length;
-
-  }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + Arrays.hashCode(indexedFields);
-    result = prime * result + Arrays.hashCode(orderFields);
-    return result;
-  }
+public int hashCode() {
+	final int prime = 31;
+	int result = 1;
+	result = prime * result + Arrays.deepHashCode(fieldByName);
+	result = prime * result + Arrays.deepHashCode(orderFields);
+	return result;
+}
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (!(obj instanceof IndexDefinition))
-      return false;
-    IndexDefinition other = (IndexDefinition) obj;
-    if (!Arrays.equals(orderFields, other.orderFields))
-      return false;
-
-    if (indexedFields.length != other.indexedFields.length) {
-      return false;
-    }
-
-    int matchCount = 0;
-
-    // same length, compare all fields
-    for (int i = 0; i < indexedFields.length; i++) {
-      for (int j = 0; j < other.indexedFields.length; j++) {
-
-        if (indexedFields[i].equals(other.indexedFields[i])) {
-          matchCount++;
-          continue;
-        }
-
-      }
-    }
-
-    return matchCount == indexedFields.length;
-  }
+public boolean equals(Object obj) {
+	if (this == obj)
+		return true;
+	if (obj == null)
+		return false;
+	if (getClass() != obj.getClass())
+		return false;
+	IndexDefinition other = (IndexDefinition) obj;
+	if (!Arrays.equals(fieldByName, other.fieldByName))
+		return false;
+	if (!Arrays.equals(orderFields, other.orderFields))
+		return false;
+	return true;
+}
 
   @Override
   public String toString() {

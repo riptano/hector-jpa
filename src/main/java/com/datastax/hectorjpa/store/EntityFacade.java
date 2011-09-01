@@ -58,7 +58,7 @@ public class EntityFacade implements Serializable {
   private final Class<?> clazz;
   private final ObjectTypeColumnStrategy strategy;
   private final KeyStrategy keyStrategy;
-  private final NavigableMap<IndexDefinition, AbstractIndexOperation> indexOps;
+  private final Map<IndexDefinition, AbstractIndexOperation> indexOps;
 
   /**
    * Fields indexed by id
@@ -185,7 +185,7 @@ public class EntityFacade implements Serializable {
 
     // this class has index definitions. Retrieve them.
     if (cassMeta.getAllDefinitions() != null) {
-      this.indexOps = new TreeMap<IndexDefinition, AbstractIndexOperation>();
+      this.indexOps = new HashMap<IndexDefinition, AbstractIndexOperation>();
 
       for (IndexDefinition indexDef : cassMeta.getAllDefinitions()
           .getDefinitions()) {

@@ -190,7 +190,7 @@ public class CassandraStoreQuery extends ExpressionStoreQuery {
 
     buff.setLength(buff.length() - 1);
 
-    if (orders.length > 1) {
+    if (orders.length > 0) {
       buff.append("\" order=\"");
 
       for (int i = 0; i < orders.length; i++) {
