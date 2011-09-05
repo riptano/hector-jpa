@@ -135,7 +135,7 @@ public class CassandraClassMetaData extends ClassMetaData {
 		return this.superClassDiscriminators;
 
 	}
-	
+
 	/**
 	 * Return the current index definition combined with all parent index definitions.  Lazy operation.  Should not be invoked until all meta data is loaded
 	 * @return
@@ -145,24 +145,28 @@ public class CassandraClassMetaData extends ClassMetaData {
 			return allDefinitions;
 		}
 		
-		allDefinitions = new IndexDefinitions();
-		
-		CassandraClassMetaData current = this;
-
-		do {
-			// TODO TN, should probably throw a metadata exception here
-			if (current.getIndexDefinitions() != null) {
-				allDefinitions.getDefinitions().addAll(current.getIndexDefinitions().getDefinitions());
-			}
-
-			
-			current = (CassandraClassMetaData) current
-					.getPCSuperclassMetaData();
-		} while (current != null);
-		
-		return allDefinitions;
+		synchronized (this) {
+		  if(allDefinitions == null){
+		    final IndexDefinitions definitions = new IndexDefinitions();
+    		
+    		CassandraClassMetaData current = this;
+    
+    		do {
+    			// TODO TN, should probably throw a metadata exception here
+    			if (current.getIndexDefinitions() != null) {
+    			  definitions.getDefinitions().addAll(current.getIndexDefinitions().getDefinitions());
+    			}
+    
+    			
+    			current = (CassandraClassMetaData) current
+    					.getPCSuperclassMetaData();
+    		} while (current != null);
+    		
+    		allDefinitions = definitions;
+    	}
+		  return allDefinitions;
+		}
 	}
-	
 	
 	
 }
