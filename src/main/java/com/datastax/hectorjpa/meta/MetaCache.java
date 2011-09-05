@@ -71,10 +71,13 @@ public class MetaCache {
     // if it's a mapped super class we ignore it, there's nothing we can do from
     // an entity facade perspective
     if (!cassMeta.isMappedSuperClass()) {
+      EntityFacade newFacade = new EntityFacade(cassMeta, serializer);
 
-      facade = new EntityFacade(cassMeta, serializer);
-
-      metaData.putIfAbsent(cassMeta, facade);
+      facade = metaData.putIfAbsent(cassMeta, newFacade);
+      
+      if (facade == null) {
+        facade = newFacade;
+      }
 
       String discriminatorValue = cassMeta.getDiscriminatorColumn();
 
