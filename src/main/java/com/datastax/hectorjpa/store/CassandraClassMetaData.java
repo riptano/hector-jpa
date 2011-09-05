@@ -147,20 +147,22 @@ public class CassandraClassMetaData extends ClassMetaData {
 		
 		synchronized (this) {
 		  if(allDefinitions == null){
-		    allDefinitions = new IndexDefinitions();
+		    final IndexDefinitions definitions = new IndexDefinitions();
     		
     		CassandraClassMetaData current = this;
     
     		do {
     			// TODO TN, should probably throw a metadata exception here
     			if (current.getIndexDefinitions() != null) {
-    			  allDefinitions.getDefinitions().addAll(current.getIndexDefinitions().getDefinitions());
+    			  definitions.getDefinitions().addAll(current.getIndexDefinitions().getDefinitions());
     			}
     
     			
     			current = (CassandraClassMetaData) current
     					.getPCSuperclassMetaData();
     		} while (current != null);
+    		
+    		allDefinitions = definitions;
     	}
 		  return allDefinitions;
 		}
