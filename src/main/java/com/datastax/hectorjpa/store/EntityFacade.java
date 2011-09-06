@@ -27,7 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.hectorjpa.index.AbstractIndexOperation;
-import com.datastax.hectorjpa.index.FieldOrder;
+import com.datastax.hectorjpa.index.IndexField;
 import com.datastax.hectorjpa.index.IndexDefinition;
 import com.datastax.hectorjpa.index.IndexOperation;
 import com.datastax.hectorjpa.index.IndexOrder;
@@ -420,7 +420,7 @@ public class EntityFacade implements Serializable {
    * @param orders
    * @return
    */
-  public AbstractIndexOperation getIndexOperation(FieldOrder[] fields,
+  public AbstractIndexOperation getIndexOperation(IndexField[] fields,
       IndexOrder[] orders) {
 
     if (indexOps == null) {

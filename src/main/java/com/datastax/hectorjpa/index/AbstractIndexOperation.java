@@ -103,7 +103,7 @@ public abstract class AbstractIndexOperation {
       IndexDefinition indexDef) {
     this.indexDefinition = indexDef;
 
-    FieldOrder[] fieldDirections = indexDef.getIndexedFields();
+    IndexField[] fieldDirections = indexDef.getIndexedFields();
     IndexOrder[] indexOrders = indexDef.getOrderFields();
 
     this.fields = new QueryIndexField[fieldDirections.length];

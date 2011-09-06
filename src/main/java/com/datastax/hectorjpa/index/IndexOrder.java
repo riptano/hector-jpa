@@ -65,36 +65,36 @@ public class IndexOrder implements Order, Comparable<IndexOrder> {
 
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + (ascending ? 1231 : 1237);
-		result = prime * result
-				+ ((fieldName == null) ? 0 : fieldName.hashCode());
-		return result;
-	}
 
 	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (!(obj instanceof IndexOrder))
-			return false;
-		IndexOrder other = (IndexOrder) obj;
-		if (ascending != other.ascending)
-			return false;
-		if (fieldName == null) {
-			if (other.fieldName != null)
-				return false;
-		} else if (!fieldName.equals(other.fieldName))
-			return false;
-		return true;
-	}
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + (ascending ? 1231 : 1237);
+    result = prime * result + ((fieldName == null) ? 0 : fieldName.hashCode());
+    return result;
+  }
 
-	@Override
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (!(obj instanceof IndexOrder))
+      return false;
+    IndexOrder other = (IndexOrder) obj;
+    if (ascending != other.ascending)
+      return false;
+    if (fieldName == null) {
+      if (other.fieldName != null)
+        return false;
+    } else if (!fieldName.equals(other.fieldName))
+      return false;
+    return true;
+  }
+
+  @Override
 	public String toString() {
 		return "IndexOrder [fieldName=" + fieldName + ", ascending="
 				+ ascending + "]";

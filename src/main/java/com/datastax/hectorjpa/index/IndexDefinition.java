@@ -10,13 +10,13 @@ import java.util.Arrays;
  */
 public class IndexDefinition {
 
-  private FieldOrder[] indexedFields;
+  private IndexField[] indexedFields;
 
   private IndexOrder[] orderFields;
   
-  private FieldOrder[] fieldByName;
+  private IndexField[] fieldByName;
   
-  public IndexDefinition(FieldOrder[] indexedFields, IndexOrder[] orderFields) {
+  public IndexDefinition(IndexField[] indexedFields, IndexOrder[] orderFields) {
     this.indexedFields = indexedFields;
     this.orderFields = orderFields;
     
@@ -27,7 +27,7 @@ public class IndexDefinition {
   /**
    * @return the indexedFields
    */
-  public FieldOrder[] getIndexedFields() {
+  public IndexField[] getIndexedFields() {
     return indexedFields;
   }
 
@@ -57,30 +57,31 @@ public class IndexDefinition {
   }
 
 
-  @Override
-public int hashCode() {
-	final int prime = 31;
-	int result = 1;
-	result = prime * result + Arrays.deepHashCode(fieldByName);
-	result = prime * result + Arrays.deepHashCode(orderFields);
-	return result;
-}
 
   @Override
-public boolean equals(Object obj) {
-	if (this == obj)
-		return true;
-	if (obj == null)
-		return false;
-	if (getClass() != obj.getClass())
-		return false;
-	IndexDefinition other = (IndexDefinition) obj;
-	if (!Arrays.equals(fieldByName, other.fieldByName))
-		return false;
-	if (!Arrays.equals(orderFields, other.orderFields))
-		return false;
-	return true;
-}
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + Arrays.deepHashCode(fieldByName);
+    result = prime * result + Arrays.deepHashCode(orderFields);
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj)
+      return true;
+    if (obj == null)
+      return false;
+    if (!(obj instanceof IndexDefinition))
+      return false;
+    IndexDefinition other = (IndexDefinition) obj;
+    if (!Arrays.deepEquals(fieldByName, other.fieldByName))
+      return false;
+    if (!Arrays.deepEquals(orderFields, other.orderFields))
+      return false;
+    return true;
+  }
 
   @Override
   public String toString() {

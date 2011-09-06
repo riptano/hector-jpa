@@ -22,7 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.hectorjpa.index.AbstractIndexOperation;
-import com.datastax.hectorjpa.index.FieldOrder;
+import com.datastax.hectorjpa.index.IndexField;
 import com.datastax.hectorjpa.index.IndexOrder;
 import com.datastax.hectorjpa.query.field.FieldExpression;
 import com.datastax.hectorjpa.query.iterator.ResultCompiler;
@@ -126,7 +126,7 @@ public class CassandraStoreQuery extends ExpressionStoreQuery {
 
     Collection<FieldExpression> expFields = query.getExpressions();
 
-    FieldOrder[] fields = new FieldOrder[expFields.size()];
+    IndexField[] fields = new IndexField[expFields.size()];
 
     IndexOrder[] orders = new IndexOrder[ordering.length];
 
@@ -140,7 +140,7 @@ public class CassandraStoreQuery extends ExpressionStoreQuery {
       // descending in
       // the index
 
-      fields[i] = new FieldOrder(current.getField().getName(), true);
+      fields[i] = new IndexField(current.getField().getName());
       log.debug("in getIndexOp with field: {}", fields[i]);
     }
 
@@ -151,14 +151,13 @@ public class CassandraStoreQuery extends ExpressionStoreQuery {
 
     EntityFacade classMeta = conf.getMetaCache().getFacade(metaData, conf.getSerializer());
 
-    AbstractIndexOperation indexOp = classMeta
-        .getIndexOperation(fields, orders);
+    AbstractIndexOperation indexOp = classMeta.getIndexOperation(fields, orders);
 
     if (indexOp == null) {
       throw new UnsupportedException(
           String
               .format(
-                  "You attempted to query an index that does not exist.  To perform this query you must define an index in the following format.  '%s'",
+                  "You attempted to query an index that does not exist.  To perform this query you must define an index similar to the following format. '%s'.  Ensure your field ordering is optimized for Cassandra range scanning.",
                   getIndexExpression(fields, orders)));
     }
 
@@ -173,18 +172,13 @@ public class CassandraStoreQuery extends ExpressionStoreQuery {
    * @param orders
    * @return
    */
-  private String getIndexExpression(FieldOrder[] fields, IndexOrder[] orders) {
+  private String getIndexExpression(IndexField[] fields, IndexOrder[] orders) {
     StringBuffer buff = new StringBuffer();
 
     buff.append("@Index(fields=\"");
 
     for (int i = 0; i < fields.length; i++) {
       buff.append(fields[i].getName());
-
-      if (!fields[i].isAscending()) {
-        buff.append(" desc");
-      }
-
       buff.append(",");
     }
 
