@@ -170,7 +170,7 @@ public class EntityFacade implements Serializable {
 
       // TODO if field.getAssociationType() > 0 .. we found an attached
       // entity
-      // and need to find it's entityFacade
+      // and need to find its entityFacade
       columnFieldIds.put(columnField.getFieldId(), columnField);
 
     }
