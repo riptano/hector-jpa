@@ -1,9 +1,9 @@
 package com.datastax.hectorjpa.meta;
 
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 import org.apache.openjpa.meta.ClassMetaData;
 
@@ -19,9 +19,16 @@ import com.datastax.hectorjpa.store.EntityFacade;
  */
 public class MetaCache {
 
-  private final ConcurrentMap<ClassMetaData, EntityFacade> metaData = new ConcurrentHashMap<ClassMetaData, EntityFacade>();
+  private final Map<ClassMetaData, EntityFacade> metaData = new HashMap<ClassMetaData, EntityFacade>();
 
-  private final ConcurrentMap<String, CassandraClassMetaData> discriminators = new ConcurrentHashMap<String, CassandraClassMetaData>();
+  private final Map<String, CassandraClassMetaData> discriminators = new HashMap<String, CassandraClassMetaData>();
+
+  /**
+   * Required to ensure that more than 1 thread does not update our in memory meta cache at the same time.  Can cause slower
+   * initialization, but ultimately will have better performance by ensuring only 1 instance of the entity facade exists
+   * for the life of the JPA plugin execution
+   */
+  private final Object writeMutex = new Object();
 
   /**
    * Create a new meta cache for classes
@@ -50,40 +57,45 @@ public class MetaCache {
     if (facade != null) {
       return facade;
     }
-    
-    
-    return constructMetaData(cassMeta, serializer, new HashSet<CassandraClassMetaData>());
+
+    synchronized (writeMutex) {
+
+      // could be second into the mutex, check again
+      facade = metaData.get(cassMeta);
+
+      if (facade != null) {
+        return facade;
+      }
+
+      return constructMetaData(cassMeta, serializer, new HashSet<CassandraClassMetaData>());
+    }
 
   }
 
   private EntityFacade constructMetaData(CassandraClassMetaData cassMeta,
       EmbeddedSerializer serializer, Set<CassandraClassMetaData> visited) {
-    
-    
-    if(visited.contains(cassMeta)){
+
+    if (visited.contains(cassMeta)) {
       return null;
     }
-    
+
     visited.add(cassMeta);
-    
-    EntityFacade facade  = null;
-    
-    // if it's a mapped super class we ignore it, there's nothing we can do from
+
+    EntityFacade facade = null;
+
+    // if it's a mapped super class we ignore it, there's nothing we can do
+    // from
     // an entity facade perspective
     if (!cassMeta.isMappedSuperClass()) {
-      EntityFacade newFacade = new EntityFacade(cassMeta, serializer);
+      facade = new EntityFacade(cassMeta, serializer);
 
-      facade = metaData.putIfAbsent(cassMeta, newFacade);
-      
-      if (facade == null) {
-        facade = newFacade;
-      }
+      metaData.put(cassMeta, facade);
 
       String discriminatorValue = cassMeta.getDiscriminatorColumn();
 
       if (discriminatorValue != null) {
 
-        discriminators.putIfAbsent(discriminatorValue, cassMeta);
+        discriminators.put(discriminatorValue, cassMeta);
       }
     }
 
@@ -98,10 +110,12 @@ public class MetaCache {
     ClassMetaData parentMeta = cassMeta.getPCSuperclassMetaData();
 
     if (parentMeta != null) {
-      constructMetaData((CassandraClassMetaData) parentMeta, serializer, visited);
+      constructMetaData((CassandraClassMetaData) parentMeta, serializer,
+          visited);
     }
 
     return facade;
+
   }
 
   /**
