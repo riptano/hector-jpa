@@ -7,13 +7,23 @@ import java.util.List;
 
 import javax.persistence.EntityManager;
 
+import junit.framework.Assert;
+
+import me.prettyprint.cassandra.serializers.LongSerializer;
+import me.prettyprint.hector.api.Cluster;
+import me.prettyprint.hector.api.Keyspace;
+import me.prettyprint.hector.api.factory.HFactory;
+import me.prettyprint.hector.api.mutation.Mutator;
+
 import org.junit.Test;
 
 import com.datastax.hectorjpa.ManagedEntityTestBase;
 import com.datastax.hectorjpa.bean.Customer;
+import com.datastax.hectorjpa.bean.ParentChildEntity;
 import com.datastax.hectorjpa.bean.Phone;
 import com.datastax.hectorjpa.bean.Phone.PhoneType;
 import com.datastax.hectorjpa.bean.Store;
+import com.google.common.collect.Lists;
 
 /**
  * Test many to many indexing through an object graph. While many-to-many in
@@ -244,5 +254,77 @@ public class OneToManyIndexTest extends ManagedEntityTestBase {
     
 
   }
+  
+  @Test
+  public void recoverFromManualDelete() {
+    final long parentId;
+    final long childEntity2Id;
+    
+    // 1. Setup a a two child entity
+    {
+      final EntityManager em = entityManagerFactory.createEntityManager();
+      
+      em.getTransaction().begin();
 
+      final ParentChildEntity parent = new ParentChildEntity();
+      final ParentChildEntity child1 = new ParentChildEntity();
+      final ParentChildEntity child2 = new ParentChildEntity();
+
+      parent.setChildren(Lists.newArrayList(child1, child2));
+
+      em.persist(parent);
+      em.getTransaction().commit();
+      em.close();
+      childEntity2Id = child2.getId();
+      parentId = parent.getId();
+    }
+
+    // 2. Do something stupid, in this case, fake a manual delete from a user in the db
+    {
+      final Cluster cluster = HFactory.getCluster("TestPool");
+      final Keyspace keyspace = HFactory.createKeyspace("TestKeyspace", cluster);
+      final Mutator<Long> mutator = HFactory.createMutator(keyspace, LongSerializer.get());
+
+      mutator.addDeletion(childEntity2Id, "ParentChildEntity");
+      mutator.execute();
+    }
+
+    // 3. Read it back, see that there is something missing, add another child
+    {
+      final EntityManager em = entityManagerFactory.createEntityManager();
+
+      em.getTransaction().begin();
+
+      final ParentChildEntity parent = em.find(ParentChildEntity.class, parentId);
+
+      Assert.assertNotNull(parent);
+      Assert.assertNotNull(parent.getChildren());
+      Assert.assertEquals(1, parent.getChildren().size());
+
+      // OK, so we only have 1, let's add back another child
+      final List<ParentChildEntity> children = parent.getChildren();
+      final ParentChildEntity child2 = new ParentChildEntity();
+
+      children.add(child2);
+      
+      em.getTransaction().commit();
+      // Make sure child 2 made it into the database
+      Assert.assertEquals(2, parent.getChildren().size());
+      Assert.assertNotNull(child2.getId());
+      em.close();
+    }
+    
+    // 4. Read it back, make sure we really have two children
+    {
+      final EntityManager em = entityManagerFactory.createEntityManager();
+
+      em.getTransaction().begin();
+
+      final ParentChildEntity parent = em.find(ParentChildEntity.class, parentId);
+      
+      Assert.assertNotNull(parent);
+      Assert.assertNotNull(parent.getChildren());
+      Assert.assertEquals(2, parent.getChildren().size());
+    }
+  }
 }

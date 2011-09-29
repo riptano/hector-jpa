@@ -20,6 +20,7 @@
         <class>com.datastax.hectorjpa.bean.Foo2</class>
         <class>com.datastax.hectorjpa.bean.Invoice</class>
         <class>com.datastax.hectorjpa.bean.UserDateRange</class>
+        <class>com.datastax.hectorjpa.bean.ParentChildEntity</class>
 
 
         <class>com.datastax.hectorjpa.bean.inheritance.SmsMessage</class>
