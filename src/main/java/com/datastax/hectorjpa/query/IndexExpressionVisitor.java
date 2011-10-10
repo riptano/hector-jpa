@@ -3,7 +3,9 @@ package com.datastax.hectorjpa.query;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.openjpa.jdbc.kernel.exps.Null;
 import org.apache.openjpa.kernel.exps.CandidatePath;
+import org.apache.openjpa.kernel.exps.Constant;
 import org.apache.openjpa.kernel.exps.Expression;
 import org.apache.openjpa.kernel.exps.ExpressionVisitor;
 import org.apache.openjpa.kernel.exps.Literal;
@@ -31,15 +33,17 @@ import com.datastax.hectorjpa.store.CassandraClassMetaData;
  * 
  */
 public class IndexExpressionVisitor implements ExpressionVisitor {
-  private static Logger log = LoggerFactory.getLogger(IndexExpressionVisitor.class);
+  private static Logger log = LoggerFactory
+      .getLogger(IndexExpressionVisitor.class);
   private List<IndexQuery> queries = new ArrayList<IndexQuery>();
   private int currentIndex;
   private CassandraClassMetaData classMetaData;
   private Object[] params;
   private FieldMetaData field;
   private Object value;
-  
-  public IndexExpressionVisitor(CassandraClassMetaData classMetaData, Object[] params) {
+
+  public IndexExpressionVisitor(CassandraClassMetaData classMetaData,
+      Object[] params) {
     this.classMetaData = classMetaData;
     this.params = params;
     this.queries.add(new IndexQuery(this.classMetaData));
@@ -54,7 +58,7 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
     if (exp instanceof OrExpression) {
       queries.add(new IndexQuery(this.classMetaData));
       currentIndex++;
-      
+
       return;
     }
 
@@ -63,55 +67,53 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
   @Override
   public void exit(Expression exp) {
 
-    // we've encountered a Or Expression which required a new query.  Decrement our current index pointer
+    // we've encountered a Or Expression which required a new query. Decrement
+    // our current index pointer
     if (exp instanceof OrExpression) {
       currentIndex--;
-      
+
       return;
     }
-    
-    
-    if(exp instanceof EqualExpression){
+
+    if (exp instanceof EqualExpression) {
       log.debug("in EqualsExpression with {}", value);
-      
+
       FieldExpression field = getFieldExpression();
       field.setStart(value, Operand.Equal);
-      //greater than equal is actually inclusive
+      // greater than equal is actually inclusive
       field.setEnd(value, Operand.Equal);
-      
+
       return;
     }
-    
-    
-    if(exp instanceof LessThanEqualExpression){
+
+    if (exp instanceof LessThanEqualExpression) {
       FieldExpression field = getFieldExpression();
       field.setEnd(value, Operand.LessThanEqual);
-      
+
       return;
     }
-    
-    if(exp instanceof LessThanExpression){
+
+    if (exp instanceof LessThanExpression) {
       FieldExpression field = getFieldExpression();
       field.setEnd(value, Operand.LessThan);
-      
+
       return;
     }
-    
-    if(exp instanceof GreaterThanEqualExpression){
+
+    if (exp instanceof GreaterThanEqualExpression) {
       log.debug("in GreaterThanEqualsExpression with {}", value);
       FieldExpression field = getFieldExpression();
       field.setStart(value, Operand.GreaterThanEqual);
-      
+
       return;
     }
-    
-    if(exp instanceof GreaterThanExpression){
+
+    if (exp instanceof GreaterThanExpression) {
       FieldExpression field = getFieldExpression();
       field.setStart(value, Operand.GreaterThan);
-      
+
       return;
     }
-    
 
   }
 
@@ -127,10 +129,20 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
     }
 
     if (val instanceof Literal) {
-      value = ((Literal)val).getValue();
-    } else if (val instanceof Parameter) {
+      value = ((Literal) val).getValue();
+      return;
+    }
+
+    if (val instanceof Parameter) {
       log.debug("reset with value {}", val);
-      value = ((Parameter)val).getValue(params);
+      value = ((Parameter) val).getValue(params);
+      return;
+
+    }
+    
+    if(val instanceof Null){
+      value = null;
+      return;
     }
   }
 
@@ -141,27 +153,28 @@ public class IndexExpressionVisitor implements ExpressionVisitor {
 
   /**
    * Get the list of index operations to perform
+   * 
    * @return
    */
-  public List<IndexQuery> getVisitors(){
+  public List<IndexQuery> getVisitors() {
     return queries;
   }
-  
-  
+
   /**
    * Get the field expression for the current field
+   * 
    * @return
    */
-  private FieldExpression getFieldExpression(){
+  private FieldExpression getFieldExpression() {
     IndexQuery query = queries.get(currentIndex);
     FieldExpression exp = query.getExpression(field);
-    
-    if(exp == null){
+
+    if (exp == null) {
       exp = FieldExpressionFactory.createFieldExpression(field);
       query.addExpression(exp);
     }
-    
+
     return exp;
-    
+
   }
 }

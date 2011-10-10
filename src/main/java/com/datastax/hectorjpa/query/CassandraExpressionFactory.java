@@ -3,6 +3,7 @@
  */
 package com.datastax.hectorjpa.query;
 
+import org.apache.openjpa.jdbc.kernel.exps.Null;
 import org.apache.openjpa.kernel.exps.Expression;
 import org.apache.openjpa.kernel.exps.InMemoryExpressionFactory;
 import org.apache.openjpa.kernel.exps.Value;
@@ -23,7 +24,6 @@ import com.datastax.hectorjpa.query.ast.OrExpression;
  * 
  */
 public class CassandraExpressionFactory extends InMemoryExpressionFactory {
-
 
   @Override
   public Expression equal(Value v1, Value v2) {
@@ -52,13 +52,17 @@ public class CassandraExpressionFactory extends InMemoryExpressionFactory {
 
   @Override
   public Expression and(Expression exp1, Expression exp2) {
-     return new AndExpression(exp1, exp2);
+    return new AndExpression(exp1, exp2);
   }
 
   @Override
   public Expression or(Expression exp1, Expression exp2) {
     return new OrExpression(exp1, exp2);
   }
-  
- 
+
+  @Override
+  public Value getNull() {
+    return new Null();
+  }
+
 }

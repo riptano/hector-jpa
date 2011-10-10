@@ -10,6 +10,7 @@ import org.apache.openjpa.persistence.Persistent;
 
 import com.datastax.hectorjpa.annotation.ColumnFamily;
 import com.datastax.hectorjpa.annotation.Index;
+import com.datastax.hectorjpa.annotation.Indexes;
 import com.datastax.hectorjpa.bean.AbstractEntity;
 
 /**
@@ -20,7 +21,10 @@ import com.datastax.hectorjpa.bean.AbstractEntity;
 @Entity
 @ColumnFamily("PersonColumnFamily")
 @DiscriminatorValue("Person")
-@Index(fields="email", order="firstName, lastName")
+@Indexes({
+@Index(fields="email", order="firstName, lastName"),
+@Index(fields="firstName, lastName")
+})
 public class Person extends AbstractEntity {
 
 
