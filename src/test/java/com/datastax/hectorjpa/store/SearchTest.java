@@ -30,6 +30,8 @@ import com.datastax.hectorjpa.bean.Foo1;
 import com.datastax.hectorjpa.bean.Foo2;
 import com.datastax.hectorjpa.bean.Invoice;
 import com.datastax.hectorjpa.bean.Invoice_;
+import com.datastax.hectorjpa.bean.OwnerRange;
+import com.datastax.hectorjpa.bean.OwnerRange_;
 import com.datastax.hectorjpa.bean.Phone;
 import com.datastax.hectorjpa.bean.Phone.PhoneType;
 import com.datastax.hectorjpa.bean.Sale;
@@ -478,6 +480,62 @@ public class SearchTest extends ManagedEntityTestBase {
     assertEquals(1, results.size());
 
     assertEquals(c1, results.get(0));
+
+  }
+  
+  
+  /**
+   * Tests that we can save an index with one of the fields nulled and still
+   * query for null
+   * 
+   * without indexing
+   */
+  @Test
+  public void nullSecondField() {
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    Person p1 = new Person();
+    p1.setEmail("p1@test.com");
+    p1.setFirstName("p1");
+    p1.setLastName(null);
+
+    em.persist(p1);
+
+    Client c1 = new Client();
+    c1.setEmail(p1.getEmail());
+    c1.setFirstName("p1");
+    c1.setLastName("Client");
+
+    em.persist(c1);
+
+    em.getTransaction().commit();
+    em.close();
+
+    //
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+
+    CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
+
+    CriteriaQuery<Person> query = queryBuilder.createQuery(Person.class);
+
+    Root<Person> person = query.from(Person.class);
+
+    Predicate predicate = queryBuilder.equal(person.get(Person_.firstName), "p1");
+    
+    Predicate lastPred = queryBuilder.isNull(person.get(Person_.lastName));
+
+    query.where(predicate, lastPred);
+
+
+    TypedQuery<Person> saleQuery = em2.createQuery(query);
+
+    List<Person> results = saleQuery.getResultList();
+
+    assertEquals(1, results.size());
+
+    assertEquals(p1, results.get(0));
 
   }
 
@@ -2024,5 +2082,52 @@ public class SearchTest extends ManagedEntityTestBase {
     assertEquals(range2, ranges.get(0));
     
 
+  }
+  
+  @Test
+  public void nullLongAfterUUID(){
+    DateTime start = new DateTime(1315370617000l);
+    
+    UUID userId = new UUID();
+    
+    
+    //start before end null
+    OwnerRange s1 = new OwnerRange();
+    s1.setStart(start);
+    s1.setEnd(null);
+    s1.setUserId(userId);
+
+    EntityManager em = entityManagerFactory.createEntityManager();
+    em.getTransaction().begin();
+
+    em.persist(s1);
+
+    em.getTransaction().commit();
+    em.close();
+    
+    
+    EntityManager em2 = entityManagerFactory.createEntityManager();
+    em2.getTransaction().begin();
+
+    CriteriaBuilder queryBuilder = em2.getCriteriaBuilder();
+
+    CriteriaQuery<OwnerRange> query = queryBuilder.createQuery(OwnerRange.class);
+
+    Root<OwnerRange> range = query.from(OwnerRange.class);
+
+    Predicate ownerPred = queryBuilder.equal(range.get(OwnerRange_.userId), userId);
+
+    Predicate endPred = queryBuilder.isNull(range.get(OwnerRange_.endSaved));
+
+    query.where(ownerPred, endPred);
+
+    TypedQuery<OwnerRange> rangeQuery = em2.createQuery(query);
+
+    
+    List<OwnerRange> results = rangeQuery.getResultList();
+    
+    
+    assertEquals(1, results.size());
+    assertTrue(results.contains(s1));
   }
 }

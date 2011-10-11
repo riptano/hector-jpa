@@ -21,6 +21,8 @@
         <class>com.datastax.hectorjpa.bean.Invoice</class>
         <class>com.datastax.hectorjpa.bean.UserDateRange</class>
         <class>com.datastax.hectorjpa.bean.ParentChildEntity</class>
+        <class>com.datastax.hectorjpa.bean.Effective</class>
+        <class>com.datastax.hectorjpa.bean.OwnerRange</class>
 
 
         <class>com.datastax.hectorjpa.bean.inheritance.SmsMessage</class>
@@ -37,6 +39,8 @@
         <class>com.datastax.hectorjpa.bean.tree.Nerd</class>
         <class>com.datastax.hectorjpa.bean.tree.Techie</class>
         <class>com.datastax.hectorjpa.bean.tree.Notification</class>
+        
+        
 
 
 
