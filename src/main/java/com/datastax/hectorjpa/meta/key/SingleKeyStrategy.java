@@ -25,9 +25,16 @@ public class SingleKeyStrategy implements KeyStrategy {
   public SingleKeyStrategy(CassandraClassMetaData classMetaData) {
     FieldMetaData[] fields = classMetaData.getPrimaryKeyFields();
 
+    if (fields.length == 0) {
+        throw new MetaDataException(String.format(
+        		"Single field strategy must have at least 1 primary key field in class %s",
+        		classMetaData.getDescribedTypeString()));
+      }
+    
     if (fields.length > 1) {
-      throw new MetaDataException(
-          "Single field strategy cannot have more than 1 primary key field");
+      throw new MetaDataException(String.format(
+    		  "Single field strategy cannot have more than 1 primary key field in class %s",
+    		  classMetaData.getDescribedTypeString()));
     }
 
     idSerializer = MappingUtils.getSerializer(fields[0]);
