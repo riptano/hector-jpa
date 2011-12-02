@@ -1,6 +1,6 @@
 package com.datastax.hectorjpa.service;
 
-import java.util.Arrays;
+import java.nio.ByteBuffer;
 
 import me.prettyprint.hector.api.beans.DynamicComposite;
 
@@ -11,8 +11,8 @@ import me.prettyprint.hector.api.beans.DynamicComposite;
  */
 public class IndexAudit {
 
-  private byte[] readRowKey;
-  private byte[] idRowKey;
+  private ByteBuffer readRowKey;
+  private ByteBuffer idRowKey;
   private DynamicComposite columnId;
   private long clock;
   private String columnFamily;
@@ -25,7 +25,7 @@ public class IndexAudit {
    * @param columnId The column id to use in the range scan
    * @param clock The clock time to use for all update operations
    */
-  public IndexAudit(byte[] readRowKey, byte[] idRowKey, DynamicComposite columnId, long clock, String columnFamily, boolean biDirectional) {
+  public IndexAudit(ByteBuffer readRowKey, ByteBuffer idRowKey, DynamicComposite columnId, long clock, String columnFamily, boolean biDirectional) {
     super();
     this.readRowKey = readRowKey;
     this.idRowKey = idRowKey;
@@ -38,14 +38,14 @@ public class IndexAudit {
   /**
    * @return the readRowKey
    */
-  public byte[] getReadRowKey() {
+  public ByteBuffer getReadRowKey() {
     return readRowKey;
   }
 
   /**
    * @return the idRowKey
    */
-  public byte[] getIdRowKey() {
+  public ByteBuffer getIdRowKey() {
     return idRowKey;
   }
 
@@ -77,52 +77,52 @@ public class IndexAudit {
     return biDirectional;
   }
 
-  /* (non-Javadoc)
-   * @see java.lang.Object#hashCode()
-   */
-  @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + (int) (clock ^ (clock >>> 32));
-    result = prime * result
-        + ((columnFamily == null) ? 0 : columnFamily.hashCode());
-    result = prime * result + ((columnId == null) ? 0 : columnId.hashCode());
-    result = prime * result + Arrays.hashCode(idRowKey);
-    result = prime * result + Arrays.hashCode(readRowKey);
-    return result;
-  }
-
-  /* (non-Javadoc)
-   * @see java.lang.Object#equals(java.lang.Object)
-   */
-  @Override
-  public boolean equals(Object obj) {
-    if (this == obj)
-      return true;
-    if (obj == null)
-      return false;
-    if (!(obj instanceof IndexAudit))
-      return false;
-    IndexAudit other = (IndexAudit) obj;
-    if (clock != other.clock)
-      return false;
-    if (columnFamily == null) {
-      if (other.columnFamily != null)
-        return false;
-    } else if (!columnFamily.equals(other.columnFamily))
-      return false;
-    if (columnId == null) {
-      if (other.columnId != null)
-        return false;
-    } else if (!columnId.equals(other.columnId))
-      return false;
-    if (!Arrays.equals(idRowKey, other.idRowKey))
-      return false;
-    if (!Arrays.equals(readRowKey, other.readRowKey))
-      return false;
-    return true;
-  }
-
- 
+//  /* (non-Javadoc)
+//   * @see java.lang.Object#hashCode()
+//   */
+//  @Override
+//  public int hashCode() {
+//    final int prime = 31;
+//    int result = 1;
+//    result = prime * result + (int) (clock ^ (clock >>> 32));
+//    result = prime * result
+//        + ((columnFamily == null) ? 0 : columnFamily.hashCode());
+//    result = prime * result + ((columnId == null) ? 0 : columnId.hashCode());
+//    result = prime * result + Arrays.hashCode(idRowKey);
+//    result = prime * result + Arrays.hashCode(readRowKey);
+//    return result;
+//  }
+//
+//  /* (non-Javadoc)
+//   * @see java.lang.Object#equals(java.lang.Object)
+//   */
+//  @Override
+//  public boolean equals(Object obj) {
+//    if (this == obj)
+//      return true;
+//    if (obj == null)
+//      return false;
+//    if (!(obj instanceof IndexAudit))
+//      return false;
+//    IndexAudit other = (IndexAudit) obj;
+//    if (clock != other.clock)
+//      return false;
+//    if (columnFamily == null) {
+//      if (other.columnFamily != null)
+//        return false;
+//    } else if (!columnFamily.equals(other.columnFamily))
+//      return false;
+//    if (columnId == null) {
+//      if (other.columnId != null)
+//        return false;
+//    } else if (!columnId.equals(other.columnId))
+//      return false;
+//    if (!Arrays.equals(idRowKey, other.idRowKey))
+//      return false;
+//    if (!Arrays.equals(readRowKey, other.readRowKey))
+//      return false;
+//    return true;
+//  }
+//
+// 
 }

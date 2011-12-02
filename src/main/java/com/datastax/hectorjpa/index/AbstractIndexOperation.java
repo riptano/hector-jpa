@@ -13,9 +13,7 @@ import java.util.Comparator;
 import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.BytesArraySerializer;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
-import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
-import me.prettyprint.cassandra.utils.ByteBufferOutputStream;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
 import me.prettyprint.hector.api.beans.DynamicComposite;
@@ -32,8 +30,8 @@ import com.datastax.hectorjpa.meta.key.KeyStrategy;
 import com.datastax.hectorjpa.query.IndexQuery;
 import com.datastax.hectorjpa.query.QueryIndexField;
 import com.datastax.hectorjpa.query.QueryOrderField;
+import com.datastax.hectorjpa.query.field.FieldExpression;
 import com.datastax.hectorjpa.query.iterator.ScanBuffer;
-import com.datastax.hectorjpa.service.IndexAudit;
 import com.datastax.hectorjpa.service.IndexQueue;
 import com.datastax.hectorjpa.store.CassandraClassMetaData;
 import com.datastax.hectorjpa.store.MappingUtils;
@@ -56,7 +54,7 @@ public abstract class AbstractIndexOperation {
   /**
    * The version to prepend to every row key for indexing
    */
-  public static final int INDEXING_VERSION = 2;
+  public static final int INDEXING_VERSION = 3;
 
   protected static byte[] HOLDER = new byte[] { 0 };
 
@@ -73,21 +71,11 @@ public abstract class AbstractIndexOperation {
   protected static int MAX_SIZE = 500;
 
   /**
-   * the byte value for the row key of our index with the version prepended to the index name
-   */
-  protected byte[] indexName;
-
-  /**
    * The index name as a string.  Not really used during runtime other than for debugging output
    */
   protected String searchIndexNameString;
   
   protected String reverseIndexNameString;
-
-  /**
-   * The bytes that represent the reverse index
-   */
-  protected byte[] reverseIndexName;
 
   protected QueryIndexField[] fields;
 
@@ -159,23 +147,7 @@ public abstract class AbstractIndexOperation {
     searchIndexNameString = searchIndexName.toString();
     reverseIndexNameString = reverseIndexName.toString();
     
-    ByteBuffer result = ByteBuffer.allocate(searchIndexNameString.length()+4);
-    result.putInt(INDEXING_VERSION);
-    result.put(StringSerializer.get().toBytes(searchIndexNameString));
-    result.rewind();
-
-    indexName = new byte[result.limit() - result.position()];
-
-    result.get(this.indexName);
-
-    result = ByteBuffer.allocate(reverseIndexNameString.length()+4);
-    result.putInt(INDEXING_VERSION);
-    result.put(StringSerializer.get().toBytes(reverseIndexNameString));
-    result.rewind();
-
-    this.reverseIndexName = new byte[result.limit() - result.position()];
-
-    result.get(this.reverseIndexName);
+ 
 
     // now get our is serializer
     keyStrategy = MappingUtils.getKeyStrategy(metaData);
@@ -192,14 +164,6 @@ public abstract class AbstractIndexOperation {
     }
     
     
-    ByteBufferOutputStream searchIndexNameBuff = new ByteBufferOutputStream();
-    ByteBufferOutputStream reverseIndexNameBuff = new ByteBufferOutputStream();
-
-    
-    searchIndexNameBuff.write(IntegerSerializer.get().toByteBuffer(INDEXING_VERSION));
-    reverseIndexNameBuff.write(IntegerSerializer.get().toByteBuffer(INDEXING_VERSION));
-    
-    
     compositeComparator = getCassType(buffSerializer);
 
   }
@@ -212,15 +176,58 @@ public abstract class AbstractIndexOperation {
    * @param clock
    */
   public abstract void writeIndex(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, IndexQueue queue);
+      Mutator<ByteBuffer> mutator, long clock, IndexQueue queue);
+
 
   /**
-   * Prepare and return the singlescaniterator for the result set
+   * Scan the given index query and add the results to the provided set. The set
+   * comparator of the dynamic columns are compared via a tree comparator
    * 
    * @param query
    */
-  public abstract ScanBuffer scanIndex(IndexQuery query, Keyspace keyspace);
+  public ScanBuffer scanIndex(IndexQuery query, Keyspace keyspace) {
 
+    DynamicComposite startScan = newComposite();
+    DynamicComposite endScan = newComposite();
+
+    int length = fields.length;
+
+    int last = length - 1;
+
+    FieldExpression exp = null;
+
+    for (int i = 0; i < last; i++) {
+
+      exp = query.getExpression(this.fields[i].getMetaData());
+
+      this.fields[i].addToComposite(startScan, i, exp.getStart(),
+          ComponentEquality.EQUAL);
+      this.fields[i].addToComposite(endScan, i, exp.getEnd(),
+          ComponentEquality.EQUAL);
+    }
+
+    exp = query.getExpression(this.fields[last].getMetaData());
+
+    // We can only write non 0 separators at the last value in our composite
+    // type
+
+    this.fields[last].addToComposite(startScan, last, exp.getStart(),
+        query.getStartEquality());
+    this.fields[last].addToComposite(endScan, last, exp.getEnd(),
+        query.getEndEquality());
+
+    return new ScanBuffer(keyspace, startScan, endScan, getScanKey());
+
+    // super.executeQuery(startScan, endScan, results, keyspace);
+
+  }
+  
+  /**
+   * Return the row key to perform scanning on
+   * @return
+   */
+  protected abstract ByteBuffer getScanKey();
+ 
   /**
    * Remove all values from the index that were for the given statemanager
    * 
@@ -235,17 +242,21 @@ public abstract class AbstractIndexOperation {
     DynamicComposite composite = newComposite();
 
     composite.addComponent(key, buffSerializer);
-
+    
     // queue the index values to be deleted
-    queue.addDelete(new IndexAudit(indexName, reverseIndexName, composite,
-        clock, CF_NAME, true));
+    queueDeletes(composite, queue, clock);
 
   }
+  
+  /**
+   * Queue the read and delete operations for every index row in this object
+   * @param searchCol
+   * @param queue
+   */
+  protected abstract void queueDeletes(DynamicComposite searchCol, IndexQueue queue, long clock);
 
   /**
-   * Construct the 2 composites from the fields in this index. Returns true if
-   * the index values have changed.
-   * 
+   * Construct the 2 composites from the fields in this index.
    * @param searchComposite
    * @param oldComposite
    * @return
@@ -398,6 +409,24 @@ public abstract class AbstractIndexOperation {
     }
 
   }
+  
+  /**
+   * Create an index key in the values of version+className+indexName
+   * @param className
+   * @param indexName
+   * @return
+   */
+  protected ByteBuffer createIndexKey(String className, String indexName){
+    
+    String indexVersion = String.format("%d_", INDEXING_VERSION);
+    
+    ByteBuffer indexKey = ByteBuffer.allocate(indexVersion.length()+className.length()+indexName.length());
+    indexKey.put(StringSerializer.get().toByteBuffer(indexVersion));
+    indexKey.put(StringSerializer.get().toByteBuffer(className));
+    indexKey.put(StringSerializer.get().toByteBuffer(indexName));
+    indexKey.rewind();
+    return indexKey;
+  }
 
   @Override
   public String toString() {
@@ -406,14 +435,10 @@ public abstract class AbstractIndexOperation {
     .append(Arrays.asList(fields))
     .append(",indexDefinition=")
     .append(indexDefinition)
-    .append(",indexName=")
-    .append(indexName)
     .append(",keyStrategy=")
     .append(keyStrategy)
     .append(",orders=")
-    .append(Arrays.asList(orders))
-    .append(",reverseIndexName=")
-    .append(reverseIndexName);
+    .append(Arrays.asList(orders));
     return sb.toString();
   }
   

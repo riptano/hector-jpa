@@ -1,12 +1,13 @@
 package com.datastax.hectorjpa.store;
 
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.MutatorImpl;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.hector.api.mutation.Mutator;
 
 import org.apache.openjpa.abstractstore.AbstractStoreManager;
@@ -81,7 +82,7 @@ public class CassandraStoreManager extends AbstractStoreManager {
 	  
 		long clock = config.getKeyspace().createClock();
 
-		Mutator<?> mutator = createMutator();
+		Mutator<ByteBuffer> mutator = createMutator();
 		
 		IndexQueue queue = new IndexQueue();
 
@@ -110,7 +111,7 @@ public class CassandraStoreManager extends AbstractStoreManager {
 	 * @param queue 
 	 */
 	@SuppressWarnings("rawtypes")
-  private void writeEntities(Collection writes, Mutator mutator, long clock, IndexQueue queue) {
+  private void writeEntities(Collection writes, Mutator<ByteBuffer> mutator, long clock, IndexQueue queue) {
 
 		OpenJPAStateManager sm = null;
 
@@ -129,8 +130,8 @@ public class CassandraStoreManager extends AbstractStoreManager {
 	 * @param clock
 	 * @param queue 
 	 */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-  private void deleteEntities(Collection deletes, Mutator mutator, long clock, IndexQueue queue) {
+	@SuppressWarnings({ "rawtypes" })
+  private void deleteEntities(Collection deletes, Mutator<ByteBuffer> mutator, long clock, IndexQueue queue) {
 		for (Iterator itr = deletes.iterator(); itr.hasNext();) {
 			// create new object data for instance
 			OpenJPAStateManager sm = (OpenJPAStateManager) itr.next();
@@ -248,8 +249,8 @@ public class CassandraStoreManager extends AbstractStoreManager {
 	 * Create a new mutator
 	 * @return
 	 */
-	private Mutator<byte[]> createMutator(){
-	  return new MutatorImpl<byte[]>(this.config.getKeyspace(), BytesArraySerializer.get());
+	private Mutator<ByteBuffer> createMutator(){
+	  return new MutatorImpl<ByteBuffer>(this.config.getKeyspace(), ByteBufferSerializer.get());
 	}
 
 }

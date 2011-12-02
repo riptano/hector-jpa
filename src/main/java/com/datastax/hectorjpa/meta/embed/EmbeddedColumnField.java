@@ -2,6 +2,7 @@ package com.datastax.hectorjpa.meta.embed;
 
 import static com.datastax.hectorjpa.serializer.CompositeUtils.newComposite;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
@@ -58,7 +59,7 @@ public class EmbeddedColumnField extends StringColumnField {
    *          the column family name
    */
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName,
       IndexQueue queue) {
 
     Object value = stateManager.fetch(fieldId);
@@ -88,16 +89,16 @@ public class EmbeddedColumnField extends StringColumnField {
    * @return True if the field was loaded. False otherwise
    */
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<String, byte[]>> result) {
+      QueryResult<ColumnSlice<String, ByteBuffer>> result) {
 
-    HColumn<String, byte[]> column = result.get().getColumnByName(name);
+    HColumn<String, ByteBuffer> column = result.get().getColumnByName(name);
 
     if (column == null) {
     	stateManager.store(fieldId, null);
       return false;
     }
 
-    DynamicComposite composite = serializer.fromBytes(column.getValue());
+    DynamicComposite composite = serializer.fromByteBuffer(column.getValue());
 
     // The entity itself is embedded read the de-serialized object and set
     // it's state manager

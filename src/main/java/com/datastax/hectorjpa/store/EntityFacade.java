@@ -1,14 +1,13 @@
 package com.datastax.hectorjpa.store;
 
 import java.io.Serializable;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
-import java.util.TreeMap;
 
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.Keyspace;
@@ -27,8 +26,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.datastax.hectorjpa.index.AbstractIndexOperation;
-import com.datastax.hectorjpa.index.IndexField;
 import com.datastax.hectorjpa.index.IndexDefinition;
+import com.datastax.hectorjpa.index.IndexField;
 import com.datastax.hectorjpa.index.IndexOperation;
 import com.datastax.hectorjpa.index.IndexOrder;
 import com.datastax.hectorjpa.index.SubclassIndexOperation;
@@ -222,7 +221,7 @@ public class EntityFacade implements Serializable {
   public void delete(OpenJPAStateManager stateManager, Mutator mutator,
       long clock, IndexQueue queue) {
 
-    byte[] keyBytes = keyStrategy.toByteArray(stateManager.fetchObjectId());
+    ByteBuffer keyBytes = keyStrategy.toByteBuffer(stateManager.fetchObjectId());
 
     // queue up direct column deletes
     for (AbstractCollectionField field : collectionFieldIds.values()) {
@@ -255,7 +254,7 @@ public class EntityFacade implements Serializable {
     StringColumnField field = null;
     AbstractCollectionField collectionField = null;
 
-    byte[] key = keyStrategy.toByteArray(stateManager.fetchObjectId());
+    ByteBuffer key = keyStrategy.toByteBuffer(stateManager.fetchObjectId());
 
   
     // load all collections as we encounter them since they're seperate row
@@ -276,7 +275,7 @@ public class EntityFacade implements Serializable {
             .getFetchBatchSize();
 
         // now query and load this field
-        SliceQuery<byte[], DynamicComposite, byte[]> query = collectionField
+        SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> query = collectionField
             .createQuery(key, keyspace, size);
 
         collectionField.readField(stateManager, query.execute());
@@ -290,10 +289,10 @@ public class EntityFacade implements Serializable {
     fields.add(this.strategy.getColumnName());
 
     // now load all the columns in the CF.
-    SliceQuery<byte[], String, byte[]> query = MappingUtils.buildSliceQuery(
+    SliceQuery<ByteBuffer, String, ByteBuffer> query = MappingUtils.buildSliceQuery(
         key, fields, columnFamilyName, keyspace);
 
-    QueryResult<ColumnSlice<String, byte[]>> result = query.execute();
+    QueryResult<ColumnSlice<String, ByteBuffer>> result = query.execute();
 
     // read the field
     for (int i = fieldSet.nextSetBit(0); i >= 0; i = fieldSet.nextSetBit(i + 1)) {
@@ -342,7 +341,7 @@ public class EntityFacade implements Serializable {
       return null;
     }
 
-    byte[] rowKey = keyStrategy.toByteArray(oid);
+    ByteBuffer rowKey = keyStrategy.toByteBuffer(oid);
 
     if (rowKey == null) {
       return null;
@@ -371,9 +370,9 @@ public class EntityFacade implements Serializable {
    *          verification
    */
   public void addColumns(OpenJPAStateManager stateManager, BitSet fieldSet,
-      Mutator<byte[]> m, long clockTime, IndexQueue queue) {
+      Mutator<ByteBuffer> m, long clockTime, IndexQueue queue) {
 
-    byte[] keyBytes = keyStrategy.toByteArray(stateManager.fetchObjectId());
+    ByteBuffer keyBytes = keyStrategy.toByteBuffer(stateManager.fetchObjectId());
 
     for (int i = fieldSet.nextSetBit(0); i >= 0; i = fieldSet.nextSetBit(i + 1)) {
       StringColumnField field = columnFieldIds.get(i);

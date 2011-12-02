@@ -9,7 +9,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.beans.ColumnSlice;
 import me.prettyprint.hector.api.beans.DynamicComposite;
@@ -38,8 +38,7 @@ public class UnorderedCollectionField extends AbstractCollectionField {
   private static final Logger logger = LoggerFactory.getLogger(UnorderedCollectionField.class);
   
   // represents the end "id" in the key
-  private static final byte[] unorderedMarker = StringSerializer.get().toBytes(
-      "u");
+  private static final ByteBuffer unorderedMarker = StringSerializer.get().toByteBuffer("u");
   
 
   public UnorderedCollectionField(FieldMetaData fmd) {
@@ -54,14 +53,14 @@ public class UnorderedCollectionField extends AbstractCollectionField {
    * getDefaultSearchmarker()
    */
   @Override
-  protected byte[] getDefaultSearchmarker() {
+  protected ByteBuffer getDefaultSearchmarker() {
     return unorderedMarker;
   }
 
   @SuppressWarnings("unchecked")
   @Override
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<DynamicComposite, byte[]>> result) {
+      QueryResult<ColumnSlice<DynamicComposite, ByteBuffer>> result) {
 
     StoreContext context = stateManager.getContext();
 
@@ -69,7 +68,7 @@ public class UnorderedCollectionField extends AbstractCollectionField {
     Collection<Object> collection = (Collection<Object>) stateManager
         .newProxy(fieldId);
 
-    for (HColumn<DynamicComposite, byte[]> col : result.get().getColumns()) {
+    for (HColumn<DynamicComposite, ByteBuffer> col : result.get().getColumns()) {
 
       // the id will always be the first value in a DynamicComposite type, we
       // only care
@@ -100,12 +99,12 @@ public class UnorderedCollectionField extends AbstractCollectionField {
 
   @Override
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName,
       IndexQueue queue) {
 
     Object field = stateManager.fetch(fieldId);
 
-    byte[] idKey = constructKey(key, unorderedMarker);
+    ByteBuffer idKey = constructKey(key, unorderedMarker);
 
     // could have been removed, blitz everything from the index
     if (field == null || ((Collection<?>)field).isEmpty()) {
@@ -131,9 +130,9 @@ public class UnorderedCollectionField extends AbstractCollectionField {
    */
   @Override
   public void removeCollection(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key) {
 
-    byte[] idKey = constructKey(key, unorderedMarker);
+    ByteBuffer idKey = constructKey(key, unorderedMarker);
 
     mutator.addDeletion(idKey, CF_NAME, null, null);
 
@@ -152,7 +151,7 @@ public class UnorderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("rawtypes")
   private void writeDeletes(OpenJPAStateManager stateManager, Collection value,
-      Mutator<byte[]> mutator, long clock, byte[] idKey, IndexQueue queue) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer idKey, IndexQueue queue) {
 
     Collection objects = getRemoved(value);
 
@@ -212,7 +211,7 @@ public class UnorderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("rawtypes")
   private void writeAdds(OpenJPAStateManager stateManager, Collection value,
-      Mutator<byte[]> mutator, long clock, byte[] idKey, IndexQueue queue) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer idKey, IndexQueue queue) {
 
     Collection objects = getAdded(value);
 
@@ -243,8 +242,8 @@ public class UnorderedCollectionField extends AbstractCollectionField {
     		  compositeComparator);
 
       mutator.addInsertion(idKey, CF_NAME,
-          new HColumnImpl<DynamicComposite, byte[]>(idComposite, HOLDER, clock,
-              compositeSerializer, BytesArraySerializer.get()));
+          new HColumnImpl<DynamicComposite, ByteBuffer>(idComposite, HOLDER, clock,
+              compositeSerializer, ByteBufferSerializer.get()));
 
       DynamicComposite idAudit = new DynamicComposite();
       idAudit.addComponent(currentId, buffSerializer,

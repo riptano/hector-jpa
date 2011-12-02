@@ -5,17 +5,18 @@ package com.datastax.hectorjpa.service;
 
 import static com.datastax.hectorjpa.serializer.CompositeUtils.newComposite;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.MutatorImpl;
-import me.prettyprint.cassandra.model.thrift.ThriftSliceQuery;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
 import me.prettyprint.hector.api.beans.AbstractComposite.Component;
 import me.prettyprint.hector.api.beans.AbstractComposite.ComponentEquality;
 import me.prettyprint.hector.api.beans.ColumnSlice;
 import me.prettyprint.hector.api.beans.DynamicComposite;
 import me.prettyprint.hector.api.beans.HColumn;
+import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.mutation.Mutator;
 import me.prettyprint.hector.api.query.SliceQuery;
 
@@ -60,7 +61,7 @@ public abstract class InMemoryIndexingService implements IndexingService {
    */
   @SuppressWarnings({ "unchecked", "rawtypes" })
   private void deleteColumn(IndexAudit audit, DynamicComposite idComposite,
-      Mutator<byte[]> mutator) {
+      Mutator<ByteBuffer> mutator) {
 
     // delete this column
     mutator.addDeletion(audit.getIdRowKey(), audit.getColumnFamily(),
@@ -101,9 +102,9 @@ public abstract class InMemoryIndexingService implements IndexingService {
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
   protected void auditInternal(IndexAudit audit) {
-    SliceQuery<byte[], DynamicComposite, byte[]> query = new ThriftSliceQuery(
-        config.getKeyspace(), BytesArraySerializer.get(), compositeSerializer,
-        BytesArraySerializer.get());
+    
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> query = HFactory.createSliceQuery(config.getKeyspace() , ByteBufferSerializer.get(), compositeSerializer,
+        ByteBufferSerializer.get());
 
     DynamicComposite start = audit.getColumnId();
 
@@ -125,11 +126,11 @@ public abstract class InMemoryIndexingService implements IndexingService {
     end.setComponent(i, current.getValue(), current.getSerializer(),
         current.getComparator(), ComponentEquality.GREATER_THAN_EQUAL);
 
-    ColumnSlice<DynamicComposite, byte[]> slice = null;
+    ColumnSlice<DynamicComposite, ByteBuffer> slice = null;
 
-    HColumn<DynamicComposite, byte[]> maxColumn = null;
+    HColumn<DynamicComposite, ByteBuffer> maxColumn = null;
 
-    Mutator<byte[]> mutator = createMutator();
+    Mutator<ByteBuffer> mutator = createMutator();
 
     do {
 
@@ -139,7 +140,7 @@ public abstract class InMemoryIndexingService implements IndexingService {
 
       slice = query.execute().get();
 
-      for (HColumn<DynamicComposite, byte[]> col : slice.getColumns()) {
+      for (HColumn<DynamicComposite, ByteBuffer> col : slice.getColumns()) {
 
         if (maxColumn == null) {
           maxColumn = col;
@@ -174,9 +175,8 @@ public abstract class InMemoryIndexingService implements IndexingService {
     // byte[] rowKey = constructKey(MappingUtils.getKeyBytes(objectId),
     // getDefaultSearchmarker());
 
-    SliceQuery<byte[], DynamicComposite, byte[]> query = new ThriftSliceQuery(
-        config.getKeyspace(), BytesArraySerializer.get(), compositeSerializer,
-        BytesArraySerializer.get());
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> query = HFactory.createSliceQuery(config.getKeyspace(), ByteBufferSerializer.get(), compositeSerializer,
+        ByteBufferSerializer.get());
 
     DynamicComposite start = audit.getColumnId();
 
@@ -198,10 +198,10 @@ public abstract class InMemoryIndexingService implements IndexingService {
     end.setComponent(i, current.getValue(), current.getSerializer(),
         current.getComparator(), ComponentEquality.GREATER_THAN_EQUAL);
 
-    ColumnSlice<DynamicComposite, byte[]> slice = null;
+    ColumnSlice<DynamicComposite, ByteBuffer> slice = null;
 
 
-    Mutator<byte[]> mutator = createMutator();
+    Mutator<ByteBuffer> mutator = createMutator();
 
     do {
 
@@ -211,7 +211,7 @@ public abstract class InMemoryIndexingService implements IndexingService {
 
       slice = query.execute().get();
 
-      for (HColumn<DynamicComposite, byte[]> col : slice.getColumns()) {
+      for (HColumn<DynamicComposite, ByteBuffer> col : slice.getColumns()) {
 
         // our previous max is too old.
         deleteColumn(audit, col.getName(), mutator);
@@ -225,9 +225,9 @@ public abstract class InMemoryIndexingService implements IndexingService {
     mutator.execute();
   }
 
-  private Mutator<byte[]> createMutator() {
-    return new MutatorImpl<byte[]>(config.getKeyspace(),
-        BytesArraySerializer.get());
+  private Mutator<ByteBuffer> createMutator() {
+    return new MutatorImpl<ByteBuffer>(config.getKeyspace(),
+        ByteBufferSerializer.get());
   }
 
 }

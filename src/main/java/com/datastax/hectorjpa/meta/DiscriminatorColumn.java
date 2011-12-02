@@ -1,5 +1,6 @@
 package com.datastax.hectorjpa.meta;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,7 +44,7 @@ public class DiscriminatorColumn implements ObjectTypeColumnStrategy {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void write(Mutator<byte[]> mutator, long clock, byte[] key,
+	public void write(Mutator<ByteBuffer> mutator, long clock, ByteBuffer key,
 			String cfName) {
 
 		mutator.addInsertion(key, cfName, new HColumnImpl(DISCRIMINAATOR_COL,
@@ -52,24 +53,24 @@ public class DiscriminatorColumn implements ObjectTypeColumnStrategy {
 	}
 
 	@Override
-	public String getStoredType(byte[] rowKey, String cfName, Keyspace keyspace) {
+	public String getStoredType(ByteBuffer rowKey, String cfName, Keyspace keyspace) {
 
-		SliceQuery<byte[], String, byte[]> query = MappingUtils
+		SliceQuery<ByteBuffer, String, ByteBuffer> query = MappingUtils
 				.buildSliceQuery(rowKey, columns, cfName, keyspace);
 
-		QueryResult<ColumnSlice<String, byte[]>> result = query.execute();
+		QueryResult<ColumnSlice<String, ByteBuffer>> result = query.execute();
 
 		// only need to check > 0. If the entity wasn't tombstoned then we would
 		// have loaded the static jpa marker column
 
-		HColumn<String, byte[]> descrimValue = result.get().getColumnByName(
+		HColumn<String, ByteBuffer> descrimValue = result.get().getColumnByName(
 				DISCRIMINAATOR_COL);
 
 		if (descrimValue == null) {
 			return null;
 		}
 
-		return StringSerializer.get().fromBytes(descrimValue.getValue());
+		return StringSerializer.get().fromByteBuffer(descrimValue.getValue());
 	}
 
 	@Override

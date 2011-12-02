@@ -3,10 +3,11 @@
  */
 package com.datastax.hectorjpa.query.iterator;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.AbstractComposite.Component;
@@ -19,7 +20,6 @@ import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.QueryResult;
 import me.prettyprint.hector.api.query.SliceQuery;
 
-import org.apache.cassandra.thrift.InvalidRequestException;
 import org.apache.cassandra.utils.ByteBufferUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +45,9 @@ public class ScanBuffer {
   private DynamicComposite start;
   private DynamicComposite end;
 
-  private byte[] indexName;
+  private ByteBuffer indexName;
 
-  private List<HColumn<DynamicComposite, byte[]>> columns;
+  private List<HColumn<DynamicComposite, ByteBuffer>> columns;
 
   /**
    * value of -1 means the end of range has been reached
@@ -64,7 +64,7 @@ public class ScanBuffer {
   private int index;
 
   public ScanBuffer(Keyspace keyspace, DynamicComposite start,
-      DynamicComposite end, byte[] indexName) {
+      DynamicComposite end, ByteBuffer indexName) {
     this.keyspace = keyspace;
     this.start = start;
     this.end = end;
@@ -180,7 +180,7 @@ public class ScanBuffer {
    * 
    * @return
    */
-  public List<HColumn<DynamicComposite, byte[]>> getColumns() {
+  public List<HColumn<DynamicComposite, ByteBuffer>> getColumns() {
     return columns;
   }
 
@@ -219,7 +219,7 @@ public class ScanBuffer {
   /**
    * Invoked to get the next page of results from cassandra
    */
-  private List<HColumn<DynamicComposite, byte[]>> nextPage(int size,
+  private List<HColumn<DynamicComposite, ByteBuffer>> nextPage(int size,
       DynamicComposite startScan) {
 
     // TODO TN the bug is in this compareTo.  The gross hack of the try/catch below
@@ -227,7 +227,7 @@ public class ScanBuffer {
 
     // we've advanced past the end, return an empty result set
     // if(end != null && startScan.compareTo(end) > -1){
-    // return new ArrayList<HColumn<DynamicComposite, byte[]>>();
+    // return new ArrayList<HColumn<DynamicComposite, ByteBuffer>>();
     // }
 
     if (logger.isDebugEnabled()) {
@@ -241,10 +241,10 @@ public class ScanBuffer {
           startHex, endHex, size });
     }
 
-    SliceQuery<byte[], DynamicComposite, byte[]> sliceQuery = HFactory
-        .createSliceQuery(keyspace, BytesArraySerializer.get(),
-            DynamicCompositeSerializer.get(), BytesArraySerializer.get());
-    QueryResult<ColumnSlice<DynamicComposite, byte[]>> result = null;
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> sliceQuery = HFactory
+        .createSliceQuery(keyspace, ByteBufferSerializer.get(),
+            DynamicCompositeSerializer.get(), ByteBufferSerializer.get());
+    QueryResult<ColumnSlice<DynamicComposite, ByteBuffer>> result = null;
 
     sliceQuery.setRange(startScan, end, false, size);
     sliceQuery.setKey(indexName);
@@ -258,14 +258,14 @@ public class ScanBuffer {
       //work around for above bug in hector, this is a dirty hack
       if (ire.getMessage().indexOf(
           "range finish must come after start in the order of traversal") > -1) {
-        return new ArrayList<HColumn<DynamicComposite, byte[]>>();
+        return new ArrayList<HColumn<DynamicComposite, ByteBuffer>>();
        
       }
       
       throw ire;
     }
 
-    List<HColumn<DynamicComposite, byte[]>> columns = result.get().getColumns();
+    List<HColumn<DynamicComposite, ByteBuffer>> columns = result.get().getColumns();
 
     logger.debug("found {} results", columns.size());
 

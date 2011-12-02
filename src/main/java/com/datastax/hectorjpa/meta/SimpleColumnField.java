@@ -1,5 +1,6 @@
 package com.datastax.hectorjpa.meta;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
@@ -75,7 +76,7 @@ public class SimpleColumnField extends StringColumnField {
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName, IndexQueue queue) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName, IndexQueue queue) {
 
     Object value = stateManager.fetch(fieldId);
     
@@ -98,16 +99,16 @@ public class SimpleColumnField extends StringColumnField {
    * @return True if the field was loaded. False otherwise
    */
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<String, byte[]>> result) {
+      QueryResult<ColumnSlice<String, ByteBuffer>> result) {
 
-    HColumn<String, byte[]> column = result.get().getColumnByName(name);
+    HColumn<String, ByteBuffer> column = result.get().getColumnByName(name);
 
     if (column == null) {
     	stateManager.store(fieldId, null);
     	return false;
     }
 
-    Object value = serializer.fromBytes(column.getValue());
+    Object value = serializer.fromByteBuffer(column.getValue());
 
    
     stateManager.store(fieldId, value);

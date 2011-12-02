@@ -3,6 +3,8 @@
  */
 package com.datastax.hectorjpa.meta;
 
+import java.nio.ByteBuffer;
+
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.mutation.Mutator;
 
@@ -21,7 +23,7 @@ public interface ObjectTypeColumnStrategy {
 	 * @param key
 	 * @param cfName
 	 */
-	public void write(Mutator<byte[]> mutator, long clock, byte[] key, String cfName);
+	public void write(Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName);
 
 
 	/**
@@ -30,7 +32,7 @@ public interface ObjectTypeColumnStrategy {
 	 * 
 	 * @return
 	 */
-	public String getStoredType(byte[] rowKey, String cfName, Keyspace keyspace);
+	public String getStoredType(ByteBuffer rowKey, String cfName, Keyspace keyspace);
 	
 	/**
 	 * Get the class for the persisted value.

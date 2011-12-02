@@ -19,13 +19,7 @@ public interface KeyStrategy {
    * @return The ByteBuffer.  Could be null if the oid is null
    */
   public ByteBuffer toByteBuffer(Object oid);
-  
-  /**
-   * Get the value as a byte array
-   * @param target
-   * @return The byte array.  Could be null if the oid is null
-   */
-  public byte[] toByteArray(Object oid);
+
   
   /**
    * Get an instance of the Id from the given bytes.  This should be the native type, not the wrapped JPA Oid

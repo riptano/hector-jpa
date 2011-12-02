@@ -5,14 +5,13 @@ import static com.datastax.hectorjpa.serializer.CompositeUtils.getCassType;
 import java.nio.ByteBuffer;
 import java.util.Collection;
 
-import me.prettyprint.cassandra.model.thrift.ThriftSliceQuery;
 import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.ColumnSlice;
 import me.prettyprint.hector.api.beans.DynamicComposite;
+import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.mutation.Mutator;
 import me.prettyprint.hector.api.query.QueryResult;
 import me.prettyprint.hector.api.query.SliceQuery;
@@ -43,7 +42,7 @@ public abstract class AbstractCollectionField extends Field {
    */
   public static final int COLLECTION_VERSION = 2;
 
-  protected static byte[] HOLDER = new byte[] { 0 };
+  protected static ByteBuffer HOLDER = ByteBuffer.wrap(new byte[] { 0 });
 
   // the default batch size when it hasn't been set into the context
   protected int DEFAULT_FETCH_SIZE = Integer.MAX_VALUE;
@@ -59,10 +58,10 @@ public abstract class AbstractCollectionField extends Field {
   protected final Class<?> targetClass;
 
   // The name of this entity serialzied as bytes
-  protected final byte[] entityName;
+  protected final ByteBuffer entityName;
 
   // the name of the field serialzied as bytes
-  protected final byte[] fieldName;
+  protected final ByteBuffer fieldName;
   
 
   protected int compositeFieldLength = 0;
@@ -93,13 +92,13 @@ public abstract class AbstractCollectionField extends Field {
     targetClass = elementClassMeta.getDescribedType();
 
     // create our cached bytes for better performance
-    fieldName = StringSerializer.get().toBytes(name);
+    fieldName = StringSerializer.get().toByteBuffer(name);
 
     // write our column family name of the owning side to our rowkey for
     // scanning
     String columnFamilyName = MappingUtils.getColumnFamily(elementClassMeta);
 
-    entityName = StringSerializer.get().toBytes(columnFamilyName);
+    entityName = StringSerializer.get().toByteBuffer(columnFamilyName);
     
     compositeComparator = getCassType(buffSerializer);
   }
@@ -110,20 +109,18 @@ public abstract class AbstractCollectionField extends Field {
    * @param entityIdBytes
    * @return
    */
-  protected byte[] constructKey(byte[] entityIdBytes, byte[] marker) {
-
-    byte[] key = new byte[4 + entityName.length + fieldName.length
-        + entityIdBytes.length + marker.length];
-
-    ByteBuffer buff = ByteBuffer.wrap(key);
+  protected ByteBuffer constructKey(ByteBuffer entityIdBytes, ByteBuffer marker) {
+    ByteBuffer buff = ByteBuffer.allocate(4 + entityName.remaining() + fieldName.remaining()
+        + entityIdBytes.remaining() + marker.remaining());
 
     buff.putInt(COLLECTION_VERSION);
-    buff.put(entityName);
-    buff.put(entityIdBytes);
-    buff.put(fieldName);
-    buff.put(marker);
-
-    return key;
+    buff.put(entityName.duplicate());
+    buff.put(entityIdBytes.duplicate());
+    buff.put(fieldName.duplicate());
+    buff.put(marker.duplicate());
+    buff.rewind();
+    
+    return buff;
 
   }
 
@@ -136,19 +133,17 @@ public abstract class AbstractCollectionField extends Field {
    * @param count
    * @return
    */
-  @SuppressWarnings({ "rawtypes", "unchecked" })
-  public SliceQuery<byte[], DynamicComposite, byte[]> createQuery(byte[] ownerKey,  Keyspace keyspace, int count) {
+  public SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> createQuery(ByteBuffer ownerKey,  Keyspace keyspace, int count) {
     
     //undefined value set it to something realistic
     if(count < 0){
       count = DEFAULT_FETCH_SIZE;
     }
     
-    byte[] rowKey = constructKey(ownerKey, getDefaultSearchmarker());
+    ByteBuffer rowKey = constructKey(ownerKey, getDefaultSearchmarker());
     
-    SliceQuery<byte[], DynamicComposite, byte[]> query = new ThriftSliceQuery(
-        keyspace, BytesArraySerializer.get(), compositeSerializer,
-        BytesArraySerializer.get());
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> query = HFactory.createSliceQuery(keyspace, ByteBufferSerializer.get(), compositeSerializer,
+        ByteBufferSerializer.get());
 
     query.setRange(null, null, false, count);
     query.setKey(rowKey);
@@ -199,7 +194,7 @@ public abstract class AbstractCollectionField extends Field {
    * @param result
    * @return true if this field had values
    */
-  public abstract boolean readField(OpenJPAStateManager stateManager,   QueryResult<ColumnSlice<DynamicComposite, byte[]>> result);
+  public abstract boolean readField(OpenJPAStateManager stateManager,   QueryResult<ColumnSlice<DynamicComposite, ByteBuffer>> result);
   
   
   /**
@@ -209,13 +204,13 @@ public abstract class AbstractCollectionField extends Field {
    * @param long clock
    * @param key The key of the stateManager's entity
    */
-  public abstract void removeCollection(OpenJPAStateManager stateManager, Mutator<byte[]> mutator, long clock, byte[] key);
+  public abstract void removeCollection(OpenJPAStateManager stateManager, Mutator<ByteBuffer> mutator, long clock, ByteBuffer key);
   
   /**
    * Return the default end bytes on the rowkey for searching an index
    * @return
    */
-  protected abstract byte[] getDefaultSearchmarker();
+  protected abstract ByteBuffer getDefaultSearchmarker();
   
   
 

@@ -83,18 +83,6 @@ public class CompositeKeyStrategy implements KeyStrategy {
         .getIdObject()));
   }
 
-  @Override
-  public byte[] toByteArray(Object oid) {
-   Object id = ((OpenJPAId)oid).getIdObject();
-    
-    
-    if(id == null){
-      return null;
-    }
-    
-    
-    return dynamicSerializer.toBytes(createComposite(id));
-  }
 
   /**
    * Uses reflection to directly access the fields that are the composite

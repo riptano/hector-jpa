@@ -1,9 +1,13 @@
 package com.datastax.hectorjpa.bean;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.Id;
+import javax.persistence.NamedQueries;
+import javax.persistence.NamedQuery;
+
 import com.datastax.hectorjpa.annotation.ColumnFamily;
 import com.datastax.hectorjpa.annotation.Index;
-
-import javax.persistence.*;
 
 @Entity
 @ColumnFamily("Foo2ColumnFamily")

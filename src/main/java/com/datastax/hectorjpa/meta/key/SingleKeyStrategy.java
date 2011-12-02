@@ -48,17 +48,7 @@ public class SingleKeyStrategy implements KeyStrategy {
     return idSerializer.toByteBuffer(id);
   }
 
-  @Override
-  public byte[] toByteArray(Object oid) {
-    Object id = ((OpenJPAId)oid).getIdObject();
-    
-    if(id == null){
-      return null;
-    }
-    
-    return idSerializer.toBytes(id);
-  }
-  
+ 
   
 
   @Override

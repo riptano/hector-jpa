@@ -5,7 +5,6 @@ package com.datastax.hectorjpa.bean.tree;
 
 import java.util.Date;
 
-import javax.persistence.DiscriminatorValue;
 import javax.persistence.Entity;
 
 import org.apache.openjpa.persistence.Persistent;

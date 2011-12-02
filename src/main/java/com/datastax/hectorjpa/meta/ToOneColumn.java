@@ -68,7 +68,7 @@ public class ToOneColumn extends SimpleColumnField {
   @SuppressWarnings({ "unchecked", "rawtypes" })
   @Override
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName, IndexQueue queue) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName, IndexQueue queue) {
 
     Object instance = stateManager.fetch(fieldId);
 
@@ -118,9 +118,9 @@ public class ToOneColumn extends SimpleColumnField {
    * @param result
    */
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<String, byte[]>> result) {
+      QueryResult<ColumnSlice<String, ByteBuffer>> result) {
 
-    HColumn<String, byte[]> column = result.get().getColumnByName(name);
+    HColumn<String, ByteBuffer> column = result.get().getColumnByName(name);
     if ( log.isDebugEnabled() ) {
       log.debug("Read column: {}", column);
     }
@@ -130,7 +130,7 @@ public class ToOneColumn extends SimpleColumnField {
       return false;
     }
 
-    ByteBuffer idBuff = (ByteBuffer) serializer.fromBytes(column.getValue());
+    ByteBuffer idBuff = column.getValue();
     
     Object id = keyStrategy.getInstance(idBuff);
 

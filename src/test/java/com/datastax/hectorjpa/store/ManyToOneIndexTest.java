@@ -5,7 +5,6 @@ import static org.junit.Assert.assertNull;
 
 import javax.persistence.EntityManager;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import com.datastax.hectorjpa.ManagedEntityTestBase;

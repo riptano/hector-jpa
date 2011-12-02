@@ -1,43 +1,36 @@
 package com.datastax.hectorjpa.store;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
 import javax.persistence.EntityManager;
-import javax.persistence.metamodel.EmbeddableType;
-import javax.persistence.metamodel.EntityType;
 
-import me.prettyprint.cassandra.connection.HConnectionManager;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.ObjectSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
-import me.prettyprint.cassandra.service.CassandraHost;
-import me.prettyprint.cassandra.service.CassandraHostConfigurator;
 import me.prettyprint.hector.api.beans.DynamicComposite;
 import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.mutation.Mutator;
 
 import org.junit.Test;
-import org.mortbay.jetty.HttpConnection;
 
 import com.datastax.hectorjpa.CassandraTestBase;
 import com.datastax.hectorjpa.ManagedEntityTestBase;
 import com.datastax.hectorjpa.bean.Customer;
 import com.datastax.hectorjpa.bean.Invoice;
 import com.datastax.hectorjpa.bean.Phone;
+import com.datastax.hectorjpa.bean.Phone.PhoneType;
 import com.datastax.hectorjpa.bean.PrimitiveTypes;
+import com.datastax.hectorjpa.bean.PrimitiveTypes.TestEnum;
 import com.datastax.hectorjpa.bean.SimpleTestBean;
 import com.datastax.hectorjpa.bean.Store;
-import com.datastax.hectorjpa.bean.Phone.PhoneType;
-import com.datastax.hectorjpa.bean.PrimitiveTypes.TestEnum;
 import com.datastax.hectorjpa.bean.tree.Role;
 import com.datastax.hectorjpa.bean.tree.Techie;
-import com.datastax.hectorjpa.meta.DiscriminatorColumn;
-import com.datastax.hectorjpa.meta.embed.EmbeddedCollectionColumnField;
 import com.datastax.hectorjpa.serializer.TimeUUIDSerializer;
 import com.eaio.uuid.UUID;
 

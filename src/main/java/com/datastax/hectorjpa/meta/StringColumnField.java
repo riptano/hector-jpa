@@ -3,6 +3,7 @@
  */
 package com.datastax.hectorjpa.meta;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.hector.api.beans.ColumnSlice;
@@ -28,7 +29,7 @@ public abstract class StringColumnField extends Field {
    * @param result
    * @return
    */
-  public abstract boolean readField(OpenJPAStateManager stateManager, QueryResult<ColumnSlice<String, byte[]>> result);
+  public abstract boolean readField(OpenJPAStateManager stateManager, QueryResult<ColumnSlice<String, ByteBuffer>> result);
   
   /**
    * Add the field names to the query to return

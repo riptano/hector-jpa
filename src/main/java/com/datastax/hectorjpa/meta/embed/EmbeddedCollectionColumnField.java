@@ -1,5 +1,6 @@
 package com.datastax.hectorjpa.meta.embed;
 
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.hector.api.beans.ColumnSlice;
@@ -50,7 +51,7 @@ public class EmbeddedCollectionColumnField extends StringColumnField {
    *          the column family name
    */
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName,
       IndexQueue queue) {
 
     embeddedDelegate.addField(stateManager, mutator, clock, key, cfName, queue);
@@ -66,7 +67,7 @@ public class EmbeddedCollectionColumnField extends StringColumnField {
    * @return True if the field was loaded. False otherwise
    */
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<String, byte[]>> result) {
+      QueryResult<ColumnSlice<String, ByteBuffer>> result) {
 
     return embeddedDelegate.readField(stateManager, result);
   }

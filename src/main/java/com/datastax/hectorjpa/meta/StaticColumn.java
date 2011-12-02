@@ -1,10 +1,11 @@
 package com.datastax.hectorjpa.meta;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.beans.ColumnSlice;
@@ -29,7 +30,7 @@ public class StaticColumn implements ObjectTypeColumnStrategy {
 
 	private static final String FOUND = "FOUND"; 
 	
-	private static final byte[] EMPTY_VAL = new byte[] { 0 };
+	private static final ByteBuffer EMPTY_VAL = ByteBuffer.wrap(new byte[] { 0 });
 
 	private static List<String> columns;
 
@@ -41,22 +42,22 @@ public class StaticColumn implements ObjectTypeColumnStrategy {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
-	public void write(Mutator<byte[]> mutator, long clock, byte[] key,
+	public void write(Mutator<ByteBuffer> mutator, long clock, ByteBuffer key,
 			String cfName) {
 
 		mutator.addInsertion(key, cfName, new HColumnImpl(EMPTY_COL, EMPTY_VAL,
-				clock, StringSerializer.get(), BytesArraySerializer.get()));
+				clock, StringSerializer.get(), ByteBufferSerializer.get()));
 
 	}
 
 	@Override
-	public String getStoredType(byte[] rowKey, String cfName, Keyspace keyspace) {
+	public String getStoredType(ByteBuffer rowKey, String cfName, Keyspace keyspace) {
 		
 
-		SliceQuery<byte[], String, byte[]> query = MappingUtils
+		SliceQuery<ByteBuffer, String, ByteBuffer> query = MappingUtils
 				.buildSliceQuery(rowKey, columns, cfName, keyspace);
 
-		QueryResult<ColumnSlice<String, byte[]>> result = query.execute();
+		QueryResult<ColumnSlice<String, ByteBuffer>> result = query.execute();
 
 		// only need to check > 0. If the entity wasn't tombstoned then we would
 		// have loaded the static jpa marker column

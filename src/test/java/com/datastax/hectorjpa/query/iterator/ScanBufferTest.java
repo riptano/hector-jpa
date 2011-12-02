@@ -10,7 +10,6 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
 import me.prettyprint.cassandra.serializers.DynamicCompositeSerializer;
 import me.prettyprint.cassandra.serializers.IntegerSerializer;
 import me.prettyprint.cassandra.serializers.LongSerializer;
@@ -38,7 +37,7 @@ import com.eaio.uuid.UUID;
  */
 public class ScanBufferTest extends CassandraTestBase {
 
-  private static final byte[] holder = new byte[] { 0 };
+  private static final ByteBuffer holder = ByteBuffer.wrap(new byte[]{ 0 });
 
   /**
    * Tests the case where start is 0 and the size is within the fetch size
@@ -47,7 +46,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void preLoaded() {
 
-    byte[] rowKey = generateComposites(100);
+    ByteBuffer rowKey = generateComposites(100);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(100,
@@ -76,7 +75,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void noRecordsLeft() {
 
-    byte[] rowKey = generateComposites(100);
+    ByteBuffer rowKey = generateComposites(100);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(100,
@@ -105,7 +104,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void preloadedAdvance() {
 
-    byte[] rowKey = generateComposites(100);
+    ByteBuffer rowKey = generateComposites(100);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(100,
@@ -142,7 +141,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void preloadedNoRecordsLeft() {
 
-    byte[] rowKey = generateComposites(100);
+    ByteBuffer rowKey = generateComposites(100);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(100,
@@ -180,7 +179,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void multiPageAdvance() {
 
-    byte[] rowKey = generateComposites(2000);
+    ByteBuffer rowKey = generateComposites(2000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), null, rowKey);
@@ -212,7 +211,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void multiPageAdvanceThenLoad() {
 
-    byte[] rowKey = generateComposites(2000);
+    ByteBuffer rowKey = generateComposites(2000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), null, rowKey);
@@ -250,7 +249,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void multiPageAdvanceUpperLimit() {
 
-    byte[] rowKey = generateComposites(1000);
+    ByteBuffer rowKey = generateComposites(1000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(799,
@@ -285,7 +284,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void loadWithoutAdvance() {
 
-    byte[] rowKey = generateComposites(1000);
+    ByteBuffer rowKey = generateComposites(1000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), genComposite(799,
@@ -309,7 +308,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void loadWithoutAdvanceBeyondRange() {
 
-    byte[] rowKey = generateComposites(1000);
+    ByteBuffer rowKey = generateComposites(1000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), null, rowKey);
@@ -338,7 +337,7 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void multiPageLoad() {
 
-    byte[] rowKey = generateComposites(1000);
+    ByteBuffer rowKey = generateComposites(1000);
 
     ScanBuffer iterator = new ScanBuffer(CassandraTestBase.keyspace,
         genComposite(0, ComponentEquality.EQUAL), null, rowKey);
@@ -374,10 +373,10 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void testCompositeOrdering() {
 
-    Mutator<byte[]> mutator = HFactory.createMutator(
-        CassandraTestBase.keyspace, BytesArraySerializer.get());
+    Mutator<ByteBuffer> mutator = HFactory.createMutator(
+        CassandraTestBase.keyspace, ByteBufferSerializer.get());
 
-    byte[] rowKey = generateRowKey();
+    ByteBuffer rowKey = generateRowKey();
 
     System.out.println("Insertion values");
 
@@ -401,7 +400,7 @@ public class ScanBufferTest extends CassandraTestBase {
         rowKey,
         AbstractIndexOperation.CF_NAME,
         HFactory.createColumn(composite, holder,
-            DynamicCompositeSerializer.get(), BytesArraySerializer.get()));
+            DynamicCompositeSerializer.get(), ByteBufferSerializer.get()));
 
     System.out.println(ByteBufferUtil.bytesToHex(composite.serialize()));
 
@@ -425,7 +424,7 @@ public class ScanBufferTest extends CassandraTestBase {
         rowKey,
         AbstractIndexOperation.CF_NAME,
         HFactory.createColumn(composite, holder,
-            DynamicCompositeSerializer.get(), BytesArraySerializer.get()));
+            DynamicCompositeSerializer.get(), ByteBufferSerializer.get()));
 
     System.out.println(ByteBufferUtil.bytesToHex(composite.serialize()));
 
@@ -433,8 +432,8 @@ public class ScanBufferTest extends CassandraTestBase {
 
     // now query them with a scan and ensure they're returned correctly.
 
-    SliceQuery<byte[], DynamicComposite, ByteBuffer> sliceQuery = HFactory
-        .createSliceQuery(keyspace, BytesArraySerializer.get(),
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> sliceQuery = HFactory
+        .createSliceQuery(keyspace, ByteBufferSerializer.get(),
             DynamicCompositeSerializer.get(), ByteBufferSerializer.get());
 
     sliceQuery.setColumnFamily(AbstractIndexOperation.CF_NAME);
@@ -489,10 +488,10 @@ public class ScanBufferTest extends CassandraTestBase {
   @Test
   public void testCompositeOrderingPass() {
 
-    Mutator<byte[]> mutator = HFactory.createMutator(
-        CassandraTestBase.keyspace, BytesArraySerializer.get());
+    Mutator<ByteBuffer> mutator = HFactory.createMutator(
+        CassandraTestBase.keyspace, ByteBufferSerializer.get());
 
-    byte[] rowKey = generateRowKey();
+    ByteBuffer rowKey = generateRowKey();
 
     System.out.println("Insertion values");
 
@@ -516,7 +515,7 @@ public class ScanBufferTest extends CassandraTestBase {
         rowKey,
         AbstractIndexOperation.CF_NAME,
         HFactory.createColumn(composite, holder,
-            DynamicCompositeSerializer.get(), BytesArraySerializer.get()));
+            DynamicCompositeSerializer.get(), ByteBufferSerializer.get()));
 
     System.out.println(ByteBufferUtil.bytesToHex(composite.serialize()));
 
@@ -540,7 +539,7 @@ public class ScanBufferTest extends CassandraTestBase {
         rowKey,
         AbstractIndexOperation.CF_NAME,
         HFactory.createColumn(composite, holder,
-            DynamicCompositeSerializer.get(), BytesArraySerializer.get()));
+            DynamicCompositeSerializer.get(), ByteBufferSerializer.get()));
 
     System.out.println(ByteBufferUtil.bytesToHex(composite.serialize()));
 
@@ -548,8 +547,8 @@ public class ScanBufferTest extends CassandraTestBase {
 
     // now query them with a scan and ensure they're returned correctly.
 
-    SliceQuery<byte[], DynamicComposite, ByteBuffer> sliceQuery = HFactory
-        .createSliceQuery(keyspace, BytesArraySerializer.get(),
+    SliceQuery<ByteBuffer, DynamicComposite, ByteBuffer> sliceQuery = HFactory
+        .createSliceQuery(keyspace, ByteBufferSerializer.get(),
             DynamicCompositeSerializer.get(), ByteBufferSerializer.get());
 
     sliceQuery.setColumnFamily(AbstractIndexOperation.CF_NAME);
@@ -609,11 +608,12 @@ public class ScanBufferTest extends CassandraTestBase {
    * 
    * @param size
    */
-  private byte[] generateComposites(int size) {
+  private ByteBuffer generateComposites(int size) {
 
-    Mutator<byte[]> mutator = HFactory.createMutator(
-        CassandraTestBase.keyspace, BytesArraySerializer.get());
-    byte[] rowKey = generateRowKey();
+    Mutator<ByteBuffer> mutator = HFactory.createMutator(
+        CassandraTestBase.keyspace, ByteBufferSerializer.get());
+  
+    ByteBuffer rowKey = generateRowKey();
 
     for (int i = 0; i < size; i++) {
 
@@ -625,7 +625,7 @@ public class ScanBufferTest extends CassandraTestBase {
           rowKey,
           AbstractIndexOperation.CF_NAME,
           HFactory.createColumn(composite, holder,
-              DynamicCompositeSerializer.get(), BytesArraySerializer.get()));
+              DynamicCompositeSerializer.get(), ByteBufferSerializer.get()));
     }
 
     mutator.execute();
@@ -639,7 +639,7 @@ public class ScanBufferTest extends CassandraTestBase {
    * 
    * @return
    */
-  private byte[] generateRowKey() {
-    return TimeUUIDSerializer.get().toBytes(new UUID());
+  private ByteBuffer generateRowKey() {
+    return TimeUUIDSerializer.get().toByteBuffer(new UUID());
   }
 }

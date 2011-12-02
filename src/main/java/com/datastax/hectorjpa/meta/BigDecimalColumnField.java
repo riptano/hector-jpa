@@ -2,6 +2,7 @@ package com.datastax.hectorjpa.meta;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
@@ -29,7 +30,7 @@ import com.datastax.hectorjpa.service.IndexQueue;
  */
 public class BigDecimalColumnField extends StringColumnField {
 
-  private static final String SUFFIX = "Scale";
+  private static final String SCALE = "Scale";
 
   protected static final StringSerializer STR_SER = StringSerializer.get();
   protected static final BigIntegerSerializer BIGINT_SER = BigIntegerSerializer
@@ -37,14 +38,14 @@ public class BigDecimalColumnField extends StringColumnField {
   protected static final IntegerSerializer INT_SER = IntegerSerializer.get();
 
   private String scaleColumnName;
-
+  
   public BigDecimalColumnField(FieldMetaData fmd) {
     this(fmd.getIndex(), fmd.getName());
   }
 
   public BigDecimalColumnField(int fieldId, String fieldName) {
     super(fieldId, fieldName);
-    this.scaleColumnName = fieldName + SUFFIX;
+    this.scaleColumnName = fieldName + SCALE;
   }
 
   /**
@@ -73,7 +74,7 @@ public class BigDecimalColumnField extends StringColumnField {
    */
   @SuppressWarnings({ "rawtypes", "unchecked" })
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName,
       IndexQueue queue) {
 
     Object value = stateManager.fetch(fieldId);
@@ -100,10 +101,10 @@ public class BigDecimalColumnField extends StringColumnField {
    * @return True if the field was loaded. False otherwise
    */
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<String, byte[]>> result) {
+      QueryResult<ColumnSlice<String, ByteBuffer>> result) {
 
-    HColumn<String, byte[]> bigIntCol = result.get().getColumnByName(name);
-    HColumn<String, byte[]> scaleCol = result.get().getColumnByName(
+    HColumn<String, ByteBuffer> bigIntCol = result.get().getColumnByName(name);
+    HColumn<String, ByteBuffer> scaleCol = result.get().getColumnByName(
         scaleColumnName);
 
     if (bigIntCol == null || scaleCol == null) {

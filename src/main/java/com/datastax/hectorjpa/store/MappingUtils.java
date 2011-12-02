@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import me.prettyprint.cassandra.model.thrift.ThriftSliceQuery;
 import me.prettyprint.cassandra.serializers.BooleanSerializer;
 import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.BytesArraySerializer;
@@ -21,6 +20,7 @@ import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.cassandra.serializers.UUIDSerializer;
 import me.prettyprint.hector.api.Keyspace;
 import me.prettyprint.hector.api.Serializer;
+import me.prettyprint.hector.api.factory.HFactory;
 import me.prettyprint.hector.api.query.SliceQuery;
 
 import org.apache.openjpa.meta.FieldMetaData;
@@ -100,12 +100,12 @@ public class MappingUtils {
   }
   
 
-  @SuppressWarnings({ "unchecked", "rawtypes" })
-  public static SliceQuery<byte[], String, byte[]> buildSliceQuery(byte[] key,
+  
+  public static SliceQuery<ByteBuffer, String, ByteBuffer> buildSliceQuery(ByteBuffer key,
       List<String> columns, String cfName, Keyspace keyspace) {
-    SliceQuery<byte[], String, byte[]> query = new ThriftSliceQuery(keyspace,
-        BytesArraySerializer.get(), StringSerializer.get(),
-        BytesArraySerializer.get());
+    SliceQuery<ByteBuffer, String, ByteBuffer> query =  HFactory.createSliceQuery(keyspace,
+        ByteBufferSerializer.get(), StringSerializer.get(),
+        ByteBufferSerializer.get());
 
     String[] colArray = new String[columns.size()];
 

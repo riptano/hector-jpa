@@ -5,7 +5,6 @@ import java.util.List;
 
 import org.apache.openjpa.jdbc.kernel.exps.Null;
 import org.apache.openjpa.kernel.exps.CandidatePath;
-import org.apache.openjpa.kernel.exps.Constant;
 import org.apache.openjpa.kernel.exps.Expression;
 import org.apache.openjpa.kernel.exps.ExpressionVisitor;
 import org.apache.openjpa.kernel.exps.Literal;

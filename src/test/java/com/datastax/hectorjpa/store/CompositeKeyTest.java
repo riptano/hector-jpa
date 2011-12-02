@@ -109,8 +109,7 @@ public class CompositeKeyTest extends ManagedEntityTestBase {
   }
 
   /**
-   * Test simple instance with no collections to ensure we persist properly
-   * without indexing
+   * Test persiste and delete should return 0 results
    */
   @Test
   public void basicQuery() {

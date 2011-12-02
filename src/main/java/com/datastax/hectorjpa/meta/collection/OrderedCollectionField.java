@@ -10,7 +10,7 @@ import java.nio.ByteBuffer;
 import java.util.Collection;
 
 import me.prettyprint.cassandra.model.HColumnImpl;
-import me.prettyprint.cassandra.serializers.BytesArraySerializer;
+import me.prettyprint.cassandra.serializers.ByteBufferSerializer;
 import me.prettyprint.cassandra.serializers.StringSerializer;
 import me.prettyprint.hector.api.beans.ColumnSlice;
 import me.prettyprint.hector.api.beans.DynamicComposite;
@@ -42,10 +42,10 @@ public class OrderedCollectionField extends AbstractCollectionField {
   private static Logger log = LoggerFactory.getLogger(OrderedCollectionField.class);
 
   // represents the end "ordered" in the key
-  private static final byte[] orderedMarker = StringSerializer.get().toBytes("o");
+  private static final ByteBuffer orderedMarker = StringSerializer.get().toByteBuffer("o");
 
   // represents the end "id" in the key
-  private static final byte[] idMarker = StringSerializer.get().toBytes("i");
+  private static final ByteBuffer idMarker = StringSerializer.get().toByteBuffer("i");
 
   private AbstractIndexField[] orderBy;
 
@@ -75,20 +75,20 @@ public class OrderedCollectionField extends AbstractCollectionField {
    * getDefaultSearchmarker()
    */
   @Override
-  protected byte[] getDefaultSearchmarker() {
-    return orderedMarker;
+  protected ByteBuffer getDefaultSearchmarker() {
+    return orderedMarker.duplicate();
   }
 
   @Override
   public void addField(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key, String cfName,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key, String cfName,
       IndexQueue queue) {
 
     Object field = stateManager.fetch(fieldId);
 
     // construct the keys
-    byte[] orderKey = constructKey(key, orderedMarker);
-    byte[] idKey = constructKey(key, idMarker);
+    ByteBuffer orderKey = constructKey(key, orderedMarker);
+    ByteBuffer idKey = constructKey(key, idMarker);
 
     // could have been removed, blitz everything from the index
     if (field == null || ((Collection<?>)field).isEmpty()) {
@@ -114,7 +114,7 @@ public class OrderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("unchecked")
   public boolean readField(OpenJPAStateManager stateManager,
-      QueryResult<ColumnSlice<DynamicComposite, byte[]>> result) {
+      QueryResult<ColumnSlice<DynamicComposite, ByteBuffer>> result) {
 
     if (log.isDebugEnabled()) {
       log.debug("readField returned {} columns in OrderedCollection", result
@@ -127,7 +127,7 @@ public class OrderedCollectionField extends AbstractCollectionField {
     Collection<Object> collection = (Collection<Object>) stateManager
         .newFieldProxy(fieldId);
 
-    for (HColumn<DynamicComposite, byte[]> col : result.get().getColumns()) {
+    for (HColumn<DynamicComposite, ByteBuffer> col : result.get().getColumns()) {
 
       ByteBuffer idBuff = col.getName().get(compositeFieldLength - 1,
           buffSerializer);
@@ -154,36 +154,6 @@ public class OrderedCollectionField extends AbstractCollectionField {
     return result.get().getColumns().size() > 0;
   }
 
-  /**
-   * Create a SliceQuery for this collection
-   * 
-   * @param objectId
-   * @param keyspace
-   * @param count
-   * @return
-   */
-  // @Override
-  // public SliceQuery<byte[], DynamicComposite, byte[]> createQuery(
-  // Object objectId, Keyspace keyspace, String columnFamilyName, int count) {
-  //
-  // // undefined value set it to something realistic
-  // if (count < 0) {
-  // count = DEFAULT_FETCH_SIZE;
-  // }
-  //
-  // byte[] key = constructKey(MappingUtils.toByteBuffer(objectId),
-  // orderedMarker);
-  //
-  // SliceQuery<byte[], DynamicComposite, byte[]> query = new ThriftSliceQuery(
-  // keyspace, BytesArraySerializer.get(), compositeSerializer,
-  // BytesArraySerializer.get());
-  //
-  // query.setRange(null, null, false, count);
-  // query.setKey(key);
-  // query.setColumnFamily(columnFamilyName);
-  // return query;
-  //
-  // }
 
   /*
    * (non-Javadoc)
@@ -195,10 +165,10 @@ public class OrderedCollectionField extends AbstractCollectionField {
    */
   @Override
   public void removeCollection(OpenJPAStateManager stateManager,
-      Mutator<byte[]> mutator, long clock, byte[] key) {
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer key) {
     // construct the keys
-    byte[] orderKey = constructKey(key, orderedMarker);
-    byte[] idKey = constructKey(key, idMarker);
+    ByteBuffer orderKey = constructKey(key, orderedMarker);
+    ByteBuffer idKey = constructKey(key, idMarker);
 
     // could have been removed, blitz everything from the index
     mutator.addDeletion(orderKey, CF_NAME, null, null);
@@ -219,7 +189,7 @@ public class OrderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("rawtypes")
   private void writeDeletes(OpenJPAStateManager stateManager, Collection value,
-      Mutator<byte[]> mutator, long clock, byte[] orderKey, byte[] idKey,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer orderKey, ByteBuffer idKey,
       IndexQueue queue) {
     if (log.isDebugEnabled()) {
       log.debug("OrderedCollection.writeDeletes");
@@ -313,7 +283,7 @@ public class OrderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("rawtypes")
   private void writeAdds(OpenJPAStateManager stateManager, Collection value,
-      Mutator<byte[]> mutator, long clock, byte[] orderKey, byte[] idKey,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer orderKey, ByteBuffer idKey,
       IndexQueue queue) {
 
     Collection objects = ProxyUtils.getAdded(value);
@@ -364,12 +334,12 @@ public class OrderedCollectionField extends AbstractCollectionField {
       orderComposite.addComponent(currentId, buffSerializer, compositeComparator);
 
       mutator.addInsertion(orderKey, CF_NAME,
-          new HColumnImpl<DynamicComposite, byte[]>(orderComposite, HOLDER,
-              clock, compositeSerializer, BytesArraySerializer.get()));
+          new HColumnImpl<DynamicComposite, ByteBuffer>(orderComposite, HOLDER,
+              clock, compositeSerializer, ByteBufferSerializer.get()));
 
       mutator.addInsertion(idKey, CF_NAME,
-          new HColumnImpl<DynamicComposite, byte[]>(idComposite, HOLDER, clock,
-              compositeSerializer, BytesArraySerializer.get()));
+          new HColumnImpl<DynamicComposite, ByteBuffer>(idComposite, HOLDER, clock,
+              compositeSerializer, ByteBufferSerializer.get()));
 
       DynamicComposite idAudit = newComposite();
       idAudit.addComponent(currentId, buffSerializer);
@@ -395,7 +365,7 @@ public class OrderedCollectionField extends AbstractCollectionField {
    */
   @SuppressWarnings("rawtypes")
   private void writeChanged(OpenJPAStateManager stateManager, Collection value,
-      Mutator<byte[]> mutator, long clock, byte[] orderKey, byte[] idKey,
+      Mutator<ByteBuffer> mutator, long clock, ByteBuffer orderKey, ByteBuffer idKey,
       IndexQueue queue) {
 
     Collection objects = ProxyUtils.getChanged(value);
@@ -456,12 +426,12 @@ public class OrderedCollectionField extends AbstractCollectionField {
       // add our order based column to the columns
 
       mutator.addInsertion(orderKey, CF_NAME,
-          new HColumnImpl<DynamicComposite, byte[]>(orderComposite, HOLDER,
-              clock, compositeSerializer, BytesArraySerializer.get()));
+          new HColumnImpl<DynamicComposite, ByteBuffer>(orderComposite, HOLDER,
+              clock, compositeSerializer, ByteBufferSerializer.get()));
 
       mutator.addInsertion(idKey, CF_NAME,
-          new HColumnImpl<DynamicComposite, byte[]>(idComposite, HOLDER, clock,
-              compositeSerializer, BytesArraySerializer.get()));
+          new HColumnImpl<DynamicComposite, ByteBuffer>(idComposite, HOLDER, clock,
+              compositeSerializer, ByteBufferSerializer.get()));
 
       DynamicComposite idAudit = newComposite();
       idAudit.addComponent(currentId, buffSerializer);

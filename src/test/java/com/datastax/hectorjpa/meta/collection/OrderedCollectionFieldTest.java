@@ -7,7 +7,6 @@ import org.junit.Test;
 
 import com.datastax.hectorjpa.ManagedEntityTestBase;
 import com.datastax.hectorjpa.bean.Store;
-import com.datastax.hectorjpa.store.MappingUtils;
 
 public class OrderedCollectionFieldTest extends ManagedEntityTestBase {
 

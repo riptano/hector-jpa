@@ -1,5 +1,6 @@
 package com.datastax.hectorjpa.store;
 
+import java.nio.ByteBuffer;
 import java.util.BitSet;
 
 import javax.persistence.Entity;
@@ -112,8 +113,7 @@ public class CassandraStore {
    * @param queue 
    * @return
    */
-  @SuppressWarnings({ "rawtypes", "unchecked" })
-  public void storeObject(Mutator mutator, OpenJPAStateManager stateManager,
+  public void storeObject(Mutator<ByteBuffer> mutator, OpenJPAStateManager stateManager,
       BitSet fields, long clock, IndexQueue queue) {
 
     if (log.isDebugEnabled()) {
@@ -137,7 +137,7 @@ public class CassandraStore {
    * @param queue 
    * @return
    */
-  public void removeObject(Mutator<byte[]> mutator, OpenJPAStateManager stateManager,
+  public void removeObject(Mutator<ByteBuffer> mutator, OpenJPAStateManager stateManager,
       long clock, IndexQueue queue) {
 
     if (log.isDebugEnabled()) {
