@@ -34,7 +34,7 @@ As cassandra matures, this plugin will as well.  Below is the roadmap for these 
 
 * Continue working with OpenJPA to make this part of the Open JPA Core
 * Convert client from Hector Thrift to CQL JDBC compliant driver
-* Remove client site composite row secondary indexing and use the Distributed Lucene Index.  This depends on this issue.  https://issues.apache.org/jira/browse/CASSANDRA-2915
+* Remove client side composite row secondary indexing and use the Distributed Lucene Index.  This depends on this issue.  https://issues.apache.org/jira/browse/CASSANDRA-2915.  Vote for it please.
 
 
 # Querying
